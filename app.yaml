@@ -1,0 +1,15 @@
+runtime: python311
+
+# Scaling configuration
+automatic_scaling:
+  min_instances: 1
+  max_instances: 10
+
+# Environment variables (set these in GCP Console instead of here for security)
+# env_variables:
+#   TOKEN: "your-telegram-bot-token"
+#   BOT_USERNAME: "@your-bot-username"
+
+# Health check configuration
+health_check:
+  enable_health_check: false
