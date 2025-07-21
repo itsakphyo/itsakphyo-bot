@@ -10,6 +10,10 @@ automatic_scaling:
 #   TOKEN: "your-telegram-bot-token"
 #   BOT_USERNAME: "@your-bot-username"
 
-# Health check configuration
+# Health check configuration - enable for Cloud Run
 health_check:
-  enable_health_check: false
+  enable_health_check: true
+  check_interval_sec: 30
+  timeout_sec: 4
+  unhealthy_threshold: 2
+  healthy_threshold: 2

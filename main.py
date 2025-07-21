@@ -65,6 +65,22 @@ async def error_handle(update: object, context: ContextTypes.DEFAULT_TYPE):
     print(f'Update {update} caused error {context.error}')
 
 if __name__ == '__main__':
+    import threading
+    from http.server import HTTPServer, SimpleHTTPRequestHandler
+    
+    # Get port from environment variable (Cloud Run requirement)
+    port = int(os.getenv('PORT', 8080))
+    
+    # Create and start HTTP server in a separate thread for Cloud Run health checks
+    def run_server():
+        server = HTTPServer(('0.0.0.0', port), SimpleHTTPRequestHandler)
+        print(f'Health check server running on port {port}')
+        server.serve_forever()
+    
+    server_thread = threading.Thread(target=run_server, daemon=True)
+    server_thread.start()
+    
+    # Set up the bot
     app = Application.builder().token(TOKEN).build()
 
     app.add_handler(CommandHandler('start', start_commend))
@@ -75,5 +91,6 @@ if __name__ == '__main__':
 
     app.add_error_handler(error_handle)
 
-    print('Polling...')
+    print('Bot starting...')
+    print(f'Health check server running on port {port}')
     app.run_polling(poll_interval=1)
