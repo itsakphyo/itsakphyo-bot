@@ -71,7 +71,7 @@ if __name__ == '__main__':
     import asyncio
     from http.server import HTTPServer, BaseHTTPRequestHandler
     import json
-    import urllib.parse
+    import threading
     
     # Get port from environment variable (Cloud Run requirement)
     port = int(os.getenv('PORT', 8080))
@@ -85,8 +85,28 @@ if __name__ == '__main__':
     app.add_handler(MessageHandler(filters.TEXT, handle_message))
     app.add_error_handler(error_handle)
 
-    # Initialize the application
-    asyncio.run(app.initialize())
+    # Global variable to store the event loop
+    bot_loop = None
+    
+    def setup_bot():
+        global bot_loop
+        bot_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(bot_loop)
+        
+        async def init_bot():
+            await app.initialize()
+            await app.start()
+        
+        bot_loop.run_until_complete(init_bot())
+        bot_loop.run_forever()
+    
+    # Start bot in separate thread
+    bot_thread = threading.Thread(target=setup_bot, daemon=True)
+    bot_thread.start()
+    
+    # Wait for bot to initialize
+    import time
+    time.sleep(2)
     
     class WebhookHandler(BaseHTTPRequestHandler):
         def do_POST(self):
@@ -98,13 +118,18 @@ if __name__ == '__main__':
                     
                     # Process the update
                     update = Update.de_json(update_data, app.bot)
-                    asyncio.run(app.process_update(update))
+                    
+                    # Schedule the update processing in the bot's event loop
+                    if bot_loop and not bot_loop.is_closed():
+                        asyncio.run_coroutine_threadsafe(app.process_update(update), bot_loop)
                     
                     self.send_response(200)
                     self.end_headers()
                     self.wfile.write(b'OK')
                 except Exception as e:
                     print(f'Error processing webhook: {e}')
+                    import traceback
+                    traceback.print_exc()
                     self.send_response(500)
                     self.end_headers()
             else:
@@ -132,4 +157,6 @@ if __name__ == '__main__':
         server.serve_forever()
     except KeyboardInterrupt:
         print('Shutting down...')
+        if bot_loop:
+            bot_loop.call_soon_threadsafe(bot_loop.stop)
         server.shutdown()

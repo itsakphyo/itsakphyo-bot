@@ -3,7 +3,7 @@
 
 # Replace these with your actual values:
 $BOT_TOKEN = "7854668878:AAFytTXx9HZLKIga9fyv-I1geX-oihH6rFM"
-$WEBHOOK_URL = "https://YOUR-CLOUD-RUN-URL/webhook"  # Replace with your actual Cloud Run URL
+$WEBHOOK_URL = "https://itsakphyo-bot-782533678055.europe-west1.run.app/webhook"  # Your actual Cloud Run URL
 
 Write-Host "Setting up webhook for Telegram bot..." -ForegroundColor Green
 
