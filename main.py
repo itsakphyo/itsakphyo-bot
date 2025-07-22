@@ -89,8 +89,18 @@ def webhook():
         # Get the update from Telegram
         update_data = request.get_json()
         
+        # Basic validation
+        if not update_data:
+            return 'No data received', 400
+        
+        # Check if it's a valid Telegram update
+        if 'message' not in update_data and 'edited_message' not in update_data and 'callback_query' not in update_data:
+            return 'Not a valid Telegram update', 400
+        
         # Create Update object
         update = Update.de_json(update_data, bot_app.bot)
+        if not update:
+            return 'Failed to parse update', 400
         
         # Process the update synchronously
         asyncio.run(bot_app.process_update(update))
@@ -100,7 +110,7 @@ def webhook():
         print(f'Error processing webhook: {e}')
         import traceback
         traceback.print_exc()
-        return 'Error', 500
+        return f'Error: {str(e)}', 500
 
 if __name__ == '__main__':
     # Initialize the bot
