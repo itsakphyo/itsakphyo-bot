@@ -1,23 +1,22 @@
-# Use the official Python runtime as a parent image
+# Base image
 FROM python:3.11-slim
 
-# Set the working directory in the container
+# Set working directory
 WORKDIR /app
 
-# Copy requirements first to leverage Docker layer caching
+# Copy and install dependencies
 COPY requirements.txt .
-
-# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the current directory contents into the container at /app
+# Copy application code
 COPY . .
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-
-# Expose port (optional, GCP will handle port binding)
+# Cloud Run expects the port via PORT env var
+ENV PORT 8080
 EXPOSE 8080
 
-# Run the application
-CMD ["python", "main.py"]
+# Launch via Gunicorn + Uvicorn worker for async support
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", \
+     "--workers", "1", \
+     "--worker-class", "uvicorn.workers.UvicornWorker", \
+     "main:app"]

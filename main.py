@@ -1,131 +1,120 @@
-from typing import Final
-from dotenv import load_dotenv
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 import os
 import asyncio
-from flask import Flask, request
+import logging
+from typing import Final
 
+from dotenv import load_dotenv
+from flask import Flask, request, abort
+from telegram import Update
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    MessageHandler,
+    ContextTypes,
+    filters,
+)
+
+# Load environment
 load_dotenv()
-
 TOKEN: Final = os.getenv("TOKEN")
-if TOKEN is None:
-    raise ValueError("TOKEN environment variable is not set.")
-BOT_USERNAME: Final = os.getenv("BOT_USERNAME")
+BOT_USERNAME: Final = os.getenv("BOT_USERNAME", "")
 
-# Flask app
-app_flask = Flask(__name__)
+if not TOKEN:
+    raise RuntimeError("Environment variable TOKEN is required")
 
-# Bot setup
+# Configure logging
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
+)
+logger = logging.getLogger(__name__)
+
+# Create Flask app
+app = Flask(__name__)
+
+# Create the Telegram bot application
 bot_app = Application.builder().token(TOKEN).build()
 
-#Commends
-async def start_commend(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message is not None:
-        await update.message.reply_text('start ဘူးကွာ')
-        
-async def help_commend(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message is not None:
-        await update.message.reply_text('help ဘူးကွာ')
-        
-async def stop_commend(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message is not None:
-        await update.message.reply_text('stop ဘူးကွာ')
 
-#Handle responses
+# ——— Bot command handlers ———
+
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handler for /start."""
+    await update.message.reply_text("မင်္ဂလာပါ! Bot ကို ဆက်သွယ်လိုပါက စတင်ပါ။")
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handler for /help."""
+    await update.message.reply_text("အသုံးပြုနည်းများ: /start, /help, /stop")
+
+async def stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handler for /stop."""
+    await update.message.reply_text("Bot service ကို ရပ်တန့်လိုက်ပြီး ဖြစ်ပါပြီ။")
+
+# ——— Message logic ———
+
 def handle_response(text: str) -> str:
-    lowered = text.lower()
-    if "hi" in lowered or "hello" in lowered:
+    """Generate a reply based on incoming text."""
+    lower = text.lower()
+    if any(greet in lower for greet in ("hi", "hello")):
         return "Lee hi"
-    elif "lee" in lowered:
-        return "lee lar"
-    elif "ဟ" == lowered:
+    if "lee" in lower:
+        return "လီးလား?"
+    if lower.strip() == "ဟ":
         return "လီးဟ"
-    elif "လီး" in lowered:
-        return "လီးလား"
-    elif "fuck" in lowered:
-        return "Fuck you too"
-    return "သားသားချစ်တဲ့အားလုံး မဂ်လာပါ"
+    if "fuck" in lower:
+        return "😅 ဆက်လက်မေးမြန်းပါ"
+    return "သားသားချစ်တဲ့အားလုံး မဂ်လာပါ!"
 
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Catch-all message handler."""
+    if not update.message or not update.message.text:
+        return
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message is not None:
-        message_type: str = update.message.chat.type
-        text: str = update.message.text if update.message.text is not None else ""
-    else:
-        message_type: str = ""
-        text: str = ""
+    chat_type = update.message.chat.type
+    text = update.message.text
 
-    if message_type == 'group':
-        if isinstance(BOT_USERNAME, str) and BOT_USERNAME and BOT_USERNAME in text:
-            new_text: str = text.replace(BOT_USERNAME, '').strip()
-            response: str = handle_response(new_text)
+    if chat_type == "group":
+        # Only respond if bot is mentioned in group
+        if BOT_USERNAME and BOT_USERNAME in text:
+            # strip @BotUsername
+            text = text.replace(BOT_USERNAME, "").strip()
         else:
             return
-    
-    else:
-        response: str = handle_response(text)
 
-    if update.message is not None:
-        await update.message.reply_text(response)
+    reply = handle_response(text)
+    await update.message.reply_text(reply)
 
-async def error_handle(update: object, context: ContextTypes.DEFAULT_TYPE):
-    print(f'Update {update} caused error {context.error}')
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Log errors."""
+    logger.error("Error handling update %s: %s", update, context.error)
 
-# Add handlers to bot
-bot_app.add_handler(CommandHandler('start', start_commend))
-bot_app.add_handler(CommandHandler('help', help_commend))
-bot_app.add_handler(CommandHandler('stop', stop_commend))
-bot_app.add_handler(MessageHandler(filters.TEXT, handle_message))
-bot_app.add_error_handler(error_handle)
 
-@app_flask.route('/')
-def health_check():
-    return 'Bot is running!'
+# ——— Register handlers ———
 
-@app_flask.route('/webhook', methods=['POST'])
-def webhook():
-    try:
-        # Get the update from Telegram
-        update_data = request.get_json()
-        
-        # Basic validation
-        if not update_data:
-            return 'No data received', 400
-        
-        # Check if it's a valid Telegram update
-        if 'message' not in update_data and 'edited_message' not in update_data and 'callback_query' not in update_data:
-            return 'Not a valid Telegram update', 400
-        
-        # Create Update object
-        update = Update.de_json(update_data, bot_app.bot)
-        if not update:
-            return 'Failed to parse update', 400
-        
-        # Process the update synchronously
-        asyncio.run(bot_app.process_update(update))
-        
-        return 'OK', 200
-    except Exception as e:
-        print(f'Error processing webhook: {e}')
-        import traceback
-        traceback.print_exc()
-        return f'Error: {str(e)}', 500
+bot_app.add_handler(CommandHandler("start", start_command))
+bot_app.add_handler(CommandHandler("help", help_command))
+bot_app.add_handler(CommandHandler("stop", stop_command))
+bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+bot_app.add_error_handler(error_handler)
 
-if __name__ == '__main__':
-    # Initialize the bot
-    async def init_bot():
-        await bot_app.initialize()
-        await bot_app.start()
-    
-    # Run the initialization
-    asyncio.run(init_bot())
-    
-    # Get port from environment
-    port = int(os.getenv('PORT', 8080))
-    
-    print(f'Bot webhook server running on port {port}')
-    print('Bot is ready to receive webhooks!')
-    
-    # Run Flask app
-    app_flask.run(host='0.0.0.0', port=port, debug=False)
+
+# ——— Flask routes ———
+
+@app.route("/", methods=["GET"])
+def health_check() -> str:
+    return "OK"
+
+@app.route("/webhook", methods=["POST"])
+def webhook() -> str:
+    """Receive Telegram update via webhook and dispatch to bot."""
+    if not request.is_json:
+        abort(400, "Expected JSON")
+
+    update_data = request.get_json()
+    update = Update.de_json(update_data, bot_app.bot)
+    # Process update (runs your handlers)
+    asyncio.run(bot_app.process_update(update))
+    return "OK"
+
+
+# Note: no `if __name__ == "__main__"` block, Gunicorn handles startup.
