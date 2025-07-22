@@ -1,8 +1,11 @@
 from typing import Final
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 import os
+import asyncio
+import json
 
 load_dotenv()
 
@@ -65,20 +68,13 @@ async def error_handle(update: object, context: ContextTypes.DEFAULT_TYPE):
     print(f'Update {update} caused error {context.error}')
 
 if __name__ == '__main__':
-    import threading
-    from http.server import HTTPServer, SimpleHTTPRequestHandler
+    import asyncio
+    from http.server import HTTPServer, BaseHTTPRequestHandler
+    import json
+    import urllib.parse
     
     # Get port from environment variable (Cloud Run requirement)
     port = int(os.getenv('PORT', 8080))
-    
-    # Create and start HTTP server in a separate thread for Cloud Run health checks
-    def run_server():
-        server = HTTPServer(('0.0.0.0', port), SimpleHTTPRequestHandler)
-        print(f'Health check server running on port {port}')
-        server.serve_forever()
-    
-    server_thread = threading.Thread(target=run_server, daemon=True)
-    server_thread.start()
     
     # Set up the bot
     app = Application.builder().token(TOKEN).build()
@@ -86,11 +82,54 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler('start', start_commend))
     app.add_handler(CommandHandler('help', help_commend))
     app.add_handler(CommandHandler('stop', stop_commend))
-
     app.add_handler(MessageHandler(filters.TEXT, handle_message))
-
     app.add_error_handler(error_handle)
 
-    print('Bot starting...')
-    print(f'Health check server running on port {port}')
-    app.run_polling(poll_interval=1)
+    # Initialize the application
+    asyncio.run(app.initialize())
+    
+    class WebhookHandler(BaseHTTPRequestHandler):
+        def do_POST(self):
+            if self.path == '/webhook':
+                try:
+                    content_length = int(self.headers['Content-Length'])
+                    post_data = self.rfile.read(content_length)
+                    update_data = json.loads(post_data.decode('utf-8'))
+                    
+                    # Process the update
+                    update = Update.de_json(update_data, app.bot)
+                    asyncio.run(app.process_update(update))
+                    
+                    self.send_response(200)
+                    self.end_headers()
+                    self.wfile.write(b'OK')
+                except Exception as e:
+                    print(f'Error processing webhook: {e}')
+                    self.send_response(500)
+                    self.end_headers()
+            else:
+                self.send_response(404)
+                self.end_headers()
+        
+        def do_GET(self):
+            # Health check endpoint
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(b'Bot is running!')
+        
+        def log_message(self, format, *args):
+            # Suppress default logging
+            pass
+    
+    # Start HTTP server for webhooks
+    server = HTTPServer(('0.0.0.0', port), WebhookHandler)
+    print(f'Bot webhook server running on port {port}')
+    print('Bot is ready to receive webhooks!')
+    
+    # Keep the server running
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print('Shutting down...')
+        server.shutdown()

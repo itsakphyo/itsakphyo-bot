@@ -3,6 +3,10 @@
 .gitignore
 README.md
 
+# Setup scripts (not needed in container)
+setup-webhook.sh
+setup-webhook.ps1
+
 # Python
 __pycache__
 *.pyc
