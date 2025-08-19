@@ -1,68 +1,33 @@
-from typing import Final
-from dotenv import load_dotenv
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-import os
+"""
+Main application entry point.
+"""
+import asyncio
+import sys
+from pathlib import Path
 
-load_dotenv()
+# Add the project root to Python path
+project_root = Path(__file__).parent
+sys.path.insert(0, str(project_root))
 
-TOKEN: Final = os.getenv("TOKEN")
-if TOKEN is None:
-    raise ValueError("TOKEN environment variable is not set.")
-BOT_USERNAME: Final = os.getenv("BOT_USERNAME")
+from app.main import app
 
-#Commends
-async def start_commend(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message is not None:
-        await update.message.reply_text('Hello')
-        
-async def help_commend(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message is not None:
-        await update.message.reply_text('Help')
-        
-async def stop_commend(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message is not None:
-        await update.message.reply_text('Stop')
-
-#Handle responses
-def handle_response(text: str) -> str:
-    return "Hello"
-
-
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message is not None:
-        message_type: str = update.message.chat.type
-        text: str = update.message.text if update.message.text is not None else ""
-    else:
-        message_type: str = ""
-        text: str = ""
-
-    if message_type == 'group':
-        if isinstance(BOT_USERNAME, str) and BOT_USERNAME and BOT_USERNAME in text:
-            new_text: str = text.replace(BOT_USERNAME, '').strip()
-            response: str = handle_response(new_text)
-        else:
-            return
+if __name__ == "__main__":
+    import uvicorn
+    from config.settings import settings
     
-    else:
-        response: str = handle_response(text)
-
-    if update.message is not None:
-        await update.message.reply_text(response)
-
-async def error_handle(update: object, context: ContextTypes.DEFAULT_TYPE):
-    print(f'Update {update} caused error {context.error}')
-
-if __name__ == '__main__':
-    app = Application.builder().token(TOKEN).build()
-
-    app.add_handler(CommandHandler('start', start_commend))
-    app.add_handler(CommandHandler('help', help_commend))
-    app.add_handler(CommandHandler('stop', stop_commend))
-
-    app.add_handler(MessageHandler(filters.TEXT, handle_message))
-
-    app.add_error_handler(error_handle)
-
-    print('Polling...')
-    app.run_polling(poll_interval=1)
+    print(f"Starting Itsakphyo Bot v1.0.0")
+    print(f"Environment: {settings.environment}")
+    print(f"Host: {settings.host}:{settings.port}")
+    print(f"WebSocket endpoint: {settings.websocket_path}")
+    print(f"Webhook endpoint: {settings.webhook_path}")
+    
+    uvicorn.run(
+        "app.main:app",
+        host=settings.host,
+        port=settings.port,
+        reload=not settings.is_production,
+        log_level=settings.log_level.lower(),
+        access_log=True,
+        ws_ping_interval=settings.ping_interval,
+        ws_ping_timeout=settings.ping_timeout,
+    )
