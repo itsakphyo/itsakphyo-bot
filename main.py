@@ -18,7 +18,6 @@ if __name__ == "__main__":
     print(f"Starting Itsakphyo Bot v1.0.0")
     print(f"Environment: {settings.environment}")
     print(f"Host: {settings.host}:{settings.port}")
-    print(f"WebSocket endpoint: {settings.websocket_path}")
     print(f"Webhook endpoint: {settings.webhook_path}")
     
     uvicorn.run(
@@ -28,6 +27,4 @@ if __name__ == "__main__":
         reload=not settings.is_production,
         log_level=settings.log_level.lower(),
         access_log=True,
-        ws_ping_interval=settings.ping_interval,
-        ws_ping_timeout=settings.ping_timeout,
     )
