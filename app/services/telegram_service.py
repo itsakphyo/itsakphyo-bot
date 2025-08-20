@@ -115,7 +115,6 @@ class TelegramBotService:
         self.application.add_handler(CommandHandler('start', self._start_command))
         self.application.add_handler(CommandHandler('help', self._help_command))
         self.application.add_handler(CommandHandler('stop', self._stop_command))
-        self.application.add_handler(CommandHandler('status', self._status_command))
         
         # Message handler
         self.application.add_handler(MessageHandler(filters.TEXT, self._handle_message))
@@ -132,12 +131,11 @@ class TelegramBotService:
         chat_id = str(update.effective_chat.id) if update.effective_chat else None
         
         response_text = (
-            "🤖 Hello! I'm your WebSocket-enabled bot.\n\n"
+            "🤖 Hello! Welcome to the bot.\n\n"
             "Available commands:\n"
             "/help - Show this help message\n"
-            "/status - Show bot status\n"
             "/stop - Stop the bot\n\n"
-            "I can now send real-time updates via WebSocket!"
+            "Feel free to send me any message!"
         )
         
         await update.message.reply_text(response_text)
@@ -159,9 +157,8 @@ class TelegramBotService:
             "🆘 Help - Bot Commands:\n\n"
             "/start - Initialize the bot\n"
             "/help - Show this help message\n"
-            "/status - Show connection status\n"
             "/stop - Stop the bot\n\n"
-            "This bot supports real-time WebSocket connections for instant updates!"
+            "Send me any message and I'll respond!"
         )
         
         await update.message.reply_text(response_text)
@@ -196,37 +193,6 @@ class TelegramBotService:
             "response": response_text
         })
     
-    async def _status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle /status command."""
-        if update.message is None:
-            return
-        
-        # Get WebSocket connection stats
-        stats = await ws_manager.get_connection_stats()
-        
-        response_text = (
-            f"📊 Bot Status:\n\n"
-            f"🔗 Total WebSocket Connections: {stats['total_connections']}\n"
-            f"👥 Connected Users: {stats['users_connected']}\n"
-            f"💬 Connected Chats: {stats['chats_connected']}\n"
-            f"🌐 Environment: {settings.environment}\n"
-            f"🤖 Bot Mode: WebSocket + Webhook"
-        )
-        
-        await update.message.reply_text(response_text)
-        
-        # Broadcast to WebSocket connections
-        user_id = str(update.effective_user.id) if update.effective_user else None
-        chat_id = str(update.effective_chat.id) if update.effective_chat else None
-        
-        await self._broadcast_telegram_message(update, "status_command", {
-            "command": "status",
-            "user_id": user_id,
-            "chat_id": chat_id,
-            "response": response_text,
-            "stats": stats
-        })
-    
     async def _handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle text messages."""
         if update.message is None or update.message.text is None:
@@ -241,37 +207,37 @@ class TelegramBotService:
         if message_type == 'group':
             if settings.bot_username and settings.bot_username in text:
                 new_text = text.replace(settings.bot_username, '').strip()
-                response = self._generate_response(new_text)
+                response = self._simple_response(new_text)
             else:
-                # Don't respond to group messages that don't mention the bot
                 return
         else:
-            response = self._generate_response(text)
+            response = self._simple_response(text)
         
-        # Send response
         await update.message.reply_text(response)
         
         # Broadcast to WebSocket connections
         await self._broadcast_telegram_message(update, "message", {
-            "message_type": message_type,
             "user_id": user_id,
             "chat_id": chat_id,
-            "text": text,
-            "response": response,
-            "timestamp": update.message.date.isoformat() if update.message.date else None
+            "message": text,
+            "response": response
         })
+        
+        # You can add your own reply logic here for more complex messages
     
     def _generate_response(self, text: str) -> str:
         """Generate response to user message."""
-        # Simple echo response - can be enhanced with AI/ML
-        if text.lower() in ['hello', 'hi', 'hey']:
-            return "Hello! How can I help you today?"
-        elif text.lower() in ['bye', 'goodbye', 'see you']:
-            return "Goodbye! Have a great day!"
-        elif text.lower() in ['thanks', 'thank you']:
-            return "You're welcome!"
+        return self._simple_response(text)
+
+    def _simple_response(self, text: str) -> str:
+        """Simple greeting and thank you responses only."""
+        t = text.lower().strip()
+        if t in ['hello', 'hi', 'hey']:
+            return "Hello!"
+        elif t in ['thanks', 'thank you']:
+            return "Thank you!"
         else:
-            return f"You said: {text}"
+            return "Thank you for your message."
     
     async def _broadcast_telegram_message(self, update: Update, event_type: str, data: Dict[str, Any]):
         """Broadcast Telegram message data to WebSocket connections."""
