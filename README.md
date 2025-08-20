@@ -1,6 +1,8 @@
-# Itsakphyo Bot - Production-Ready Telegram Bot
+# Itsakphyo - Telegram Bot
 
 A production-ready Telegram bot with clean architecture and robust error handling.
+
+ **Try the live bot**: [@itsakphyo_bot](https://t.me/itsakphyo_bot)
 
 ## Features
 
