@@ -1,5 +1,5 @@
 """
-Telegram bot service for handling webhook and WebSocket integration.
+Telegram bot service for handling webhook and messaging.
 """
 import asyncio
 import json
@@ -7,7 +7,6 @@ import logging
 from typing import Optional, Dict, Any
 from telegram import Update, Bot
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from app.core.websocket_manager import ws_manager
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -118,9 +117,6 @@ class TelegramBotService:
         
         # Message handler
         self.application.add_handler(MessageHandler(filters.TEXT, self._handle_message))
-        
-        # Error handler
-        self.application.add_error_handler(self._error_handler)
     
     async def _start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start command."""
@@ -139,14 +135,6 @@ class TelegramBotService:
         )
         
         await update.message.reply_text(response_text)
-        
-        # Broadcast to WebSocket connections
-        await self._broadcast_telegram_message(update, "start_command", {
-            "command": "start",
-            "user_id": user_id,
-            "chat_id": chat_id,
-            "response": response_text
-        })
     
     async def _help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /help command."""
@@ -162,17 +150,6 @@ class TelegramBotService:
         )
         
         await update.message.reply_text(response_text)
-        
-        # Broadcast to WebSocket connections
-        user_id = str(update.effective_user.id) if update.effective_user else None
-        chat_id = str(update.effective_chat.id) if update.effective_chat else None
-        
-        await self._broadcast_telegram_message(update, "help_command", {
-            "command": "help",
-            "user_id": user_id,
-            "chat_id": chat_id,
-            "response": response_text
-        })
     
     async def _stop_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /stop command."""
@@ -181,17 +158,6 @@ class TelegramBotService:
             
         response_text = "👋 Goodbye! Bot is stopping..."
         await update.message.reply_text(response_text)
-        
-        # Broadcast to WebSocket connections
-        user_id = str(update.effective_user.id) if update.effective_user else None
-        chat_id = str(update.effective_chat.id) if update.effective_chat else None
-        
-        await self._broadcast_telegram_message(update, "stop_command", {
-            "command": "stop",
-            "user_id": user_id,
-            "chat_id": chat_id,
-            "response": response_text
-        })
     
     async def _handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle text messages."""
@@ -215,14 +181,6 @@ class TelegramBotService:
         
         await update.message.reply_text(response)
         
-        # Broadcast to WebSocket connections
-        await self._broadcast_telegram_message(update, "message", {
-            "user_id": user_id,
-            "chat_id": chat_id,
-            "message": text,
-            "response": response
-        })
-        
         # You can add your own reply logic here for more complex messages
     
     def _generate_response(self, text: str) -> str:
@@ -238,50 +196,6 @@ class TelegramBotService:
             return "Thank you!"
         else:
             return "Thank you for your message."
-    
-    async def _broadcast_telegram_message(self, update: Update, event_type: str, data: Dict[str, Any]):
-        """Broadcast Telegram message data to WebSocket connections."""
-        try:
-            message_data = {
-                "type": "telegram_message",
-                "event": event_type,
-                "data": data,
-                "timestamp": update.message.date.isoformat() if update.message and update.message.date else None
-            }
-            
-            user_id = data.get("user_id")
-            chat_id = data.get("chat_id")
-            
-            # Send to specific user connections if available
-            if user_id:
-                await ws_manager.send_personal_message(user_id, message_data)
-            
-            # Send to specific chat connections if available
-            if chat_id and chat_id != user_id:
-                await ws_manager.send_chat_message(chat_id, message_data)
-                
-        except Exception as e:
-            logger.error(f"Error broadcasting telegram message: {e}")
-    
-    async def _error_handler(self, update: object, context: ContextTypes.DEFAULT_TYPE):
-        """Handle errors."""
-        error_msg = f'Update {update} caused error {context.error}'
-        logger.error(error_msg)
-        
-        # Broadcast error to WebSocket connections if possible
-        try:
-            error_data = {
-                "type": "error",
-                "event": "telegram_error",
-                "data": {
-                    "error": str(context.error),
-                    "update": str(update)
-                },
-                "timestamp": None
-            }
-            await ws_manager.broadcast(error_data)
-        except Exception as e:
-            logger.error(f"Error broadcasting error message: {e}")
     
     async def process_webhook(self, update_data: dict) -> Dict[str, Any]:
         """Process incoming webhook update."""

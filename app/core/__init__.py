@@ -1,4 +1,4 @@
 # Core module
-from .websocket_manager import ws_manager, WebSocketManager
+# No core modules currently needed
 
-__all__ = ["ws_manager", "WebSocketManager"]
+__all__ = []

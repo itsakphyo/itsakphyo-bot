@@ -24,12 +24,6 @@ class Settings:
         self.port = int(os.getenv("PORT", "8000"))
         self.debug = os.getenv("DEBUG", "False").lower() == "true"
         
-        # WebSocket Configuration
-        self.websocket_path = os.getenv("WEBSOCKET_PATH", "/ws")
-        self.max_connections = int(os.getenv("MAX_CONNECTIONS", "100"))
-        self.ping_interval = int(os.getenv("PING_INTERVAL", "20"))
-        self.ping_timeout = int(os.getenv("PING_TIMEOUT", "10"))
-        
         # Security
         self.secret_key = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
         self.allowed_hosts = ["*"]

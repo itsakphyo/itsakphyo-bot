@@ -20,15 +20,6 @@ class MessageType(Enum):
     CONTACT = "contact"
 
 
-class ConnectionStatus(Enum):
-    """WebSocket connection status."""
-    CONNECTING = "connecting"
-    CONNECTED = "connected"
-    DISCONNECTING = "disconnecting"
-    DISCONNECTED = "disconnected"
-    ERROR = "error"
-
-
 @dataclass
 class TelegramUser:
     """Telegram user data model."""
@@ -116,69 +107,10 @@ class TelegramMessage:
 
 
 @dataclass
-class WebSocketMessage:
-    """WebSocket message data model."""
-    type: str
-    event: str
-    data: Dict[str, Any]
-    timestamp: Optional[datetime] = None
-    connection_id: Optional[str] = None
-    user_id: Optional[str] = None
-    chat_id: Optional[str] = None
-    
-    def __post_init__(self):
-        if self.timestamp is None:
-            self.timestamp = datetime.utcnow()
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for JSON serialization."""
-        return {
-            "type": self.type,
-            "event": self.event,
-            "data": self.data,
-            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
-            "connection_id": self.connection_id,
-            "user_id": self.user_id,
-            "chat_id": self.chat_id
-        }
-
-
-@dataclass
-class ConnectionMetrics:
-    """WebSocket connection metrics."""
-    connection_id: str
-    user_id: Optional[str]
-    chat_id: Optional[str]
-    connected_at: datetime
-    last_activity: datetime
-    messages_sent: int = 0
-    messages_received: int = 0
-    bytes_sent: int = 0
-    bytes_received: int = 0
-    status: ConnectionStatus = ConnectionStatus.CONNECTED
-    
-    @property
-    def uptime_seconds(self) -> float:
-        """Get connection uptime in seconds."""
-        return (datetime.utcnow() - self.connected_at).total_seconds()
-    
-    @property
-    def idle_seconds(self) -> float:
-        """Get idle time in seconds."""
-        return (datetime.utcnow() - self.last_activity).total_seconds()
-    
-    def update_activity(self):
-        """Update last activity timestamp."""
-        self.last_activity = datetime.utcnow()
-
-
-@dataclass
 class BotStats:
     """Bot statistics data model."""
     total_messages_processed: int = 0
     total_commands_processed: int = 0
-    total_websocket_connections: int = 0
-    active_websocket_connections: int = 0
     uptime_seconds: float = 0
     last_update_timestamp: Optional[datetime] = None
     
@@ -187,8 +119,6 @@ class BotStats:
         return {
             "total_messages_processed": self.total_messages_processed,
             "total_commands_processed": self.total_commands_processed,
-            "total_websocket_connections": self.total_websocket_connections,
-            "active_websocket_connections": self.active_websocket_connections,
             "uptime_seconds": self.uptime_seconds,
             "last_update_timestamp": self.last_update_timestamp.isoformat() if self.last_update_timestamp else None
         }
