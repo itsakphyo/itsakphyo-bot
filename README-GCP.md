@@ -39,16 +39,16 @@ gcloud config list
 
 ### 3. Prepare Environment Variables
 
-Copy the GCP environment template:
+Create your local GCP environment file:
 ```bash
-cp .env.gcp .env.gcp.local
+cp .env.gcp.template .env.gcp
 ```
 
-Edit `.env.gcp.local` with your actual values:
+Edit `.env.gcp` with your actual values (this file is ignored by git for security):
 ```env
-# Telegram Bot Configuration
-TELEGRAM_BOT_TOKEN=your_actual_bot_token_here
-TELEGRAM_BOT_USERNAME=your_bot_username
+# Bot Configuration
+TOKEN=your_actual_bot_token_here
+BOT_USERNAME=your_bot_username
 
 # Server Configuration (Google Cloud Run uses PORT environment variable)
 PORT=8080
@@ -59,29 +59,26 @@ ENVIRONMENT=production
 LOG_LEVEL=INFO
 ```
 
+**Note**: You can change `itsakphyo-bot` to any name you prefer throughout this guide.
+
 ### 4. Deploy to Google Cloud Run
 
-**Option A: Using the automated script (Recommended)**
-
-For Windows PowerShell:
-```powershell
-.\deploy-gcp.ps1
-```
-
-For Linux/Mac:
-```bash
-chmod +x deploy-gcp.sh
-./deploy-gcp.sh
-```
-
-**Option B: Manual deployment**
+**Option A: Using Cloud Build (Recommended)**
 
 ```bash
 # Enable required APIs
 gcloud services enable run.googleapis.com
 gcloud services enable cloudbuild.googleapis.com
-gcloud services enable containerregistry.googleapis.com
 
+# Deploy using cloudbuild.yaml
+gcloud builds submit --config cloudbuild.yaml
+
+# The cloudbuild.yaml will automatically deploy to Cloud Run
+```
+
+**Option B: Manual deployment**
+
+```bash
 # Build and push the image
 gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/itsakphyo-bot
 
@@ -96,8 +93,10 @@ gcloud run deploy itsakphyo-bot \
   --cpu 1 \
   --min-instances 0 \
   --max-instances 10 \
-  --set-env-vars TELEGRAM_BOT_TOKEN=your_token,TELEGRAM_BOT_USERNAME=your_username,ENVIRONMENT=production
+  --set-env-vars TOKEN=your_token,BOT_USERNAME=your_username,ENVIRONMENT=production
 ```
+
+**Note**: Replace `itsakphyo-bot` with your preferred service name if desired.
 
 ## Configuration Details
 
@@ -107,10 +106,10 @@ Your `.env.gcp` file should contain:
 
 ```env
 # Required: Your Telegram bot token from @BotFather
-TELEGRAM_BOT_TOKEN=your_bot_token_here
+TOKEN=your_bot_token_here
 
 # Required: Your bot username (without @)
-TELEGRAM_BOT_USERNAME=your_bot_username
+BOT_USERNAME=your_bot_username
 
 # Google Cloud Run Configuration
 PORT=8080
@@ -239,15 +238,12 @@ gcloud run services describe itsakphyo-bot --region us-central1 --format 'value(
 To update your service:
 
 ```bash
-# Rebuild and redeploy
+# Using Cloud Build (recommended)
+gcloud builds submit --config cloudbuild.yaml
+
+# Or manual rebuild and redeploy
 gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/itsakphyo-bot
 gcloud run deploy itsakphyo-bot --image gcr.io/YOUR_PROJECT_ID/itsakphyo-bot --region us-central1
-```
-
-Or simply run the deployment script again:
-```bash
-./deploy-gcp.sh  # Linux/Mac
-.\deploy-gcp.ps1 # Windows
 ```
 
 ## Support
@@ -262,15 +258,25 @@ If you encounter issues:
 
 ```
 ├── app/                          # Application code
-├── .env.gcp                      # GCP environment template
-├── .env.gcp.local               # Your actual environment (don't commit)
+│   ├── handlers/                 # Request handlers
+│   ├── services/                 # Business logic  
+│   ├── models/                   # Data models
+│   ├── utils/                    # Utility functions
+│   └── main.py                   # FastAPI app
+├── config/                       # Configuration
+│   ├── settings.py               # App settings
+│   └── logging.py                # Logging setup
+├── logs/                         # Log files (auto-created)
+├── .env.gcp.template             # GCP environment template
+├── .env.gcp                      # Your actual environment (git-ignored)
 ├── Dockerfile                    # Optimized for Google Cloud Run
-├── cloudbuild.yaml              # Google Cloud Build configuration
-├── deploy-gcp.sh                # Linux/Mac deployment script
-├── deploy-gcp.ps1               # Windows PowerShell deployment script
-├── requirements.txt             # Python dependencies
-└── README-GCP.md               # This file
+├── cloudbuild.yaml               # Google Cloud Build configuration
+├── requirements.txt              # Python dependencies
+├── main.py                       # Application entry point
+└── README-GCP.md                 # This file
 ```
+
+**Note**: You can rename `itsakphyo-bot` to any service name you prefer in the deployment commands.
 
 ## Next Steps
 

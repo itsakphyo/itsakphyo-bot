@@ -15,7 +15,7 @@ A production-ready Telegram bot with clean architecture and robust error handlin
 ## Project Structure
 
 ```
-itsakphyo-bot/
+itsakphyo-bot/                    # You can rename this to any name you prefer
 ├── app/
 │   ├── handlers/          # Request handlers
 │   │   └── http_handler.py
@@ -30,10 +30,13 @@ itsakphyo-bot/
 │   ├── settings.py
 │   └── logging.py
 ├── logs/                  # Log files
+├── tests/                 # Test files
 ├── requirements.txt
 ├── Dockerfile
 ├── docker-compose.yml
+├── cloudbuild.yaml       # For GCP deployment
 ├── .env.example
+├── .env.gcp.template     # For GCP deployment
 └── main.py               # Entry point
 ```
 
@@ -118,6 +121,7 @@ docker run -d \
 ### Using Docker Compose
 
 ```bash
+# Build and run (you can change the service name in docker-compose.yml)
 docker-compose up -d
 ```
 
@@ -178,14 +182,8 @@ server {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-    }
-
-    location /ws {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
 ```
