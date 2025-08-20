@@ -30,13 +30,15 @@ itsakphyo-bot/                    # You can rename this to any name you prefer
 │   ├── settings.py
 │   └── logging.py
 ├── logs/                  # Log files
-├── tests/                 # Test files
+├── static/               # Static files (if any)
 ├── requirements.txt
 ├── Dockerfile
 ├── docker-compose.yml
 ├── cloudbuild.yaml       # For GCP deployment
 ├── .env.example
 ├── .env.gcp.template     # For GCP deployment
+├── start.bat             # Windows development script
+├── start.sh              # Linux/Mac development script
 └── main.py               # Entry point
 ```
 
@@ -64,6 +66,16 @@ cp .env.example .env
 
 ### 4. Run the Bot
 
+**Option A: Using convenience scripts**
+```bash
+# Windows
+.\start.bat
+
+# Linux/Mac  
+./start.sh
+```
+
+**Option B: Manual setup**
 ```bash
 python main.py
 ```
@@ -127,31 +139,25 @@ docker-compose up -d
 
 ## Development
 
-### Running Tests
+### Local Development Scripts
 
+Use the provided convenience scripts for easy setup:
+
+**Windows:**
 ```bash
-# Install test dependencies
-pip install pytest pytest-asyncio
-
-# Run tests
-python tests/test_telegram.py
+.\start.bat
 ```
 
-### Code Formatting
-
+**Linux/Mac:**
 ```bash
-# Install development dependencies
-pip install black flake8 mypy
-
-# Format code
-black .
-
-# Check code style
-flake8 .
-
-# Type checking
-mypy .
+./start.sh
 ```
+
+These scripts automatically:
+- Create virtual environment
+- Install dependencies  
+- Set up configuration files
+- Start the application
 
 ## Production Setup
 
@@ -190,10 +196,8 @@ server {
 
 ## Bot Commands
 
-- `/start` - Initialize the bot
-- `/help` - Show help message
-- `/status` - Show bot and connection status
-- `/stop` - Stop the bot
+- `/start` - Initialize the bot and show welcome message
+- `/help` - Show help message with available commands
 
 ## Monitoring
 
@@ -201,12 +205,6 @@ server {
 
 ```bash
 curl http://localhost:8000/health
-```
-
-### Connection Stats
-
-```bash
-curl http://localhost:8000/stats
 ```
 
 ### Logs
@@ -219,7 +217,7 @@ Logs are stored in `logs/app.log` with automatic rotation.
 
 - **TelegramService**: Handles Telegram bot operations and message processing
 - **HTTPHandler**: Processes HTTP requests and webhook endpoints
-- **BotStats**: Manages bot statistics and health monitoring
+- **Settings**: Manages configuration and environment variables
 
 ### Message Flow
 
@@ -231,7 +229,7 @@ Logs are stored in `logs/app.log` with automatic rotation.
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests if needed
+4. Test the bot locally using the provided scripts
 5. Submit a pull request
 
 ## License
