@@ -198,6 +198,7 @@ server {
 
 - `/start` - Initialize the bot and show welcome message
 - `/help` - Show help message with available commands
+- `/stop` - Stop the bot gracefully
 
 ## Monitoring
 
@@ -234,7 +235,13 @@ Logs are stored in `logs/app.log` with automatic rotation.
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Author
+
+**Aung Khant Phyo**
+- Email: itsakphyo@gmail.com
+- GitHub: [@itsakphyo](https://github.com/itsakphyo)
 
 ## Support
 
