@@ -5,12 +5,12 @@ A production-ready Telegram bot with clean architecture and robust error handlin
 ## Features
 
 -  **Production Ready**: Structured codebase with proper error handling
-- 🐳 **Docker Support**: Containerized deployment
-- 📊 **Monitoring**: Health checks and status monitoring
-- 🔒 **Security**: Input validation and secure configuration
-- 📝 **Logging**: Comprehensive logging with rotation
-- ⚡ **FastAPI**: High-performance async web framework
-- 🔧 **Configurable**: Environment-based configuration
+-  **Docker Support**: Containerized deployment
+-  **Monitoring**: Health checks and status monitoring
+-  **Security**: Input validation and secure configuration
+-  **Logging**: Comprehensive logging with rotation
+-  **FastAPI**: High-performance async web framework
+-  **Configurable**: Environment-based configuration
 
 ## Project Structure
 
