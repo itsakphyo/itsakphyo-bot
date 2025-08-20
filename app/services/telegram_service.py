@@ -47,7 +47,7 @@ class TelegramBotService:
                 try:
                     bot_instance = self.bot
                     if bot_instance:
-                        await bot_instance.delete_webhook(drop_pending_updates=True)
+                        await bot_instance.delete_webhook(drop_pending_updates=True) # type: ignore
                 except Exception as e:
                     logger.warning(f"Failed to delete webhook: {e}")
                 
