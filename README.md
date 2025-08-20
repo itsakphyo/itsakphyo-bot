@@ -53,20 +53,34 @@ git clone https://github.com/itsakphyo/itsakphyo-bot
 cd itsakphyo-bot
 ```
 
-### 2. Install Dependencies
+### 2. Create Virtual Environment
+
+```bash
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+# Windows:
+venv\Scripts\activate
+
+# Linux/Mac:
+source venv/bin/activate
+```
+
+### 3. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Configure Environment
+### 4. Configure Environment
 
 ```bash
 cp .env.example .env
 # Edit .env with your bot token and configuration
 ```
 
-### 4. Run the Bot
+### 5. Run the Bot
 
 **Option A: Using convenience scripts**
 ```bash
