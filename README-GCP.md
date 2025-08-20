@@ -1,6 +1,8 @@
 # Google Cloud Platform Deployment Guide
 
-This guide will help you deploy your Telegram bot to Google Cloud Platform without requiring a domain.
+This guide will help you deploy your Telegram bot to Google Cloud Platform for **24/7 availability** without requiring a domain.
+
+> **Note**: This configuration ensures your bot stays online 24/7 with `min-instances=1` to avoid cold starts and maintain instant webhook response times.
 
 ## Prerequisites
 
@@ -15,7 +17,8 @@ This guide will help you deploy your Telegram bot to Google Cloud Platform witho
 
 **Windows:**
 ```powershell
-# Download and run the installer from: https://cloud.google.com/sdk/docs/install-sdk
+# Download and run the installer from: 
+https://cloud.google.com/sdk/docs/install-sdk
 ```
 
 **Linux/Mac:**
@@ -91,7 +94,7 @@ gcloud run deploy itsakphyo-bot \
   --port 8080 \
   --memory 512Mi \
   --cpu 1 \
-  --min-instances 0 \
+  --min-instances 1 \
   --max-instances 10 \
   --set-env-vars TOKEN=your_token,BOT_USERNAME=your_username,ENVIRONMENT=production
 ```
@@ -125,7 +128,7 @@ LOG_LEVEL=INFO
 - **Memory**: 512Mi (can be increased if needed)
 - **CPU**: 1 vCPU
 - **Port**: 8080 (required by Google Cloud Run)
-- **Scaling**: 0 to 10 instances (auto-scaling)
+- **Scaling**: 1 to 10 instances (always-on with auto-scaling for 24/7 availability)
 - **Timeout**: 900 seconds (15 minutes)
 - **Authentication**: Allow unauthenticated requests
 
@@ -181,10 +184,11 @@ Google Cloud Run pricing (as of 2024):
 - **Paid Usage**: ~$0.000024 per vCPU-second, ~$0.0000025 per GiB-second
 
 ### Cost Optimization Tips:
-1. **Set min-instances to 0** for auto-scaling to zero
+1. **Keep min-instances at 1** for 24/7 bot availability (prevents cold starts)
 2. **Use appropriate memory allocation** (512Mi is usually sufficient)
 3. **Monitor usage** in Google Cloud Console
 4. **Set up billing alerts** to avoid unexpected charges
+5. **Consider increasing min-instances only if needed** for high traffic
 
 ## Troubleshooting
 
