@@ -46,7 +46,6 @@ def setup_logging():
     # Set specific loggers
     logging.getLogger('uvicorn').setLevel(logging.INFO)
     logging.getLogger('telegram').setLevel(logging.INFO)
-    logging.getLogger('websockets').setLevel(logging.INFO)
     
     return root_logger
 
