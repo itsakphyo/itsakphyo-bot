@@ -17,7 +17,7 @@ A production-ready Telegram bot with clean architecture and robust error handlin
 ## Project Structure
 
 ```
-itsakphyo-bot/                    # You can rename this to any name you prefer
+itsakphyo-bot/             
 ├── app/
 │   ├── handlers/          # Request handlers
 │   │   └── http_handler.py
@@ -49,7 +49,7 @@ itsakphyo-bot/                    # You can rename this to any name you prefer
 ### 1. Clone and Setup
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/itsakphyo/itsakphyo-bot
 cd itsakphyo-bot
 ```
 
