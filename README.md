@@ -1,14 +1,13 @@
-# Itsakphyo Bot - WebSocket Enabled Telegram Bot
+# Itsakphyo Bot - Production-Ready Telegram Bot
 
-A production-ready Telegram bot with WebSocket support for real-time communication.
+A production-ready Telegram bot with clean architecture and robust error handling.
 
 ## Features
 
-- 🔄 **WebSocket Support**: Real-time bidirectional communication
-- 🚀 **Production Ready**: Structured codebase with proper error handling
+-  **Production Ready**: Structured codebase with proper error handling
 - 🐳 **Docker Support**: Containerized deployment
-- 📊 **Monitoring**: Health checks and connection statistics
-- 🔒 **Security**: Rate limiting and input validation
+- 📊 **Monitoring**: Health checks and status monitoring
+- 🔒 **Security**: Input validation and secure configuration
 - 📝 **Logging**: Comprehensive logging with rotation
 - ⚡ **FastAPI**: High-performance async web framework
 - 🔧 **Configurable**: Environment-based configuration
@@ -18,10 +17,7 @@ A production-ready Telegram bot with WebSocket support for real-time communicati
 ```
 itsakphyo-bot/
 ├── app/
-│   ├── core/              # Core functionality
-│   │   └── websocket_manager.py
 │   ├── handlers/          # Request handlers
-│   │   ├── websocket_handler.py
 │   │   └── http_handler.py
 │   ├── services/          # Business logic
 │   │   └── telegram_service.py
@@ -33,8 +29,6 @@ itsakphyo-bot/
 ├── config/                # Configuration
 │   ├── settings.py
 │   └── logging.py
-├── tests/                 # Test files
-│   └── test_websocket.py
 ├── logs/                  # Log files
 ├── requirements.txt
 ├── Dockerfile
@@ -86,9 +80,6 @@ BOT_USERNAME=@your_bot_username_here
 HOST=0.0.0.0
 PORT=8000
 ENVIRONMENT=development
-
-# WebSocket Configuration
-WEBSOCKET_PATH=/ws
 ```
 
 ### Getting Bot Token
@@ -105,52 +96,8 @@ WEBSOCKET_PATH=/ws
 - `GET /` - Root endpoint
 - `GET /health` - Health check
 - `POST /webhook` - Telegram webhook
-- `GET /stats` - Connection statistics
-- `POST /broadcast` - Broadcast message to WebSocket clients
-- `POST /cleanup` - Cleanup stale connections
-
-### WebSocket Endpoint
-
-- `WS /ws` - WebSocket connection
-  - Query parameters: `user_id`, `chat_id`, `client_id`
-
-## WebSocket Usage
-
-### Connect to WebSocket
-
-```javascript
-const ws = new WebSocket('ws://localhost:8000/ws?user_id=123&chat_id=456');
-
-ws.onopen = function(event) {
-    console.log('Connected to WebSocket');
-};
-
-ws.onmessage = function(event) {
-    const data = JSON.parse(event.data);
-    console.log('Received:', data);
-};
-```
-
-### Send Messages
-
-```javascript
-// Ping message
-ws.send(JSON.stringify({
-    type: "ping",
-    event: "test",
-    data: { message: "ping" }
-}));
-
-// Chat message
-ws.send(JSON.stringify({
-    type: "chat",
-    event: "send_message",
-    data: {
-        message: "Hello World!",
-        target_chat_id: "456"
-    }
-}));
-```
+- `POST /webhook/set` - Set webhook URL
+- `DELETE /webhook` - Delete webhook
 
 ## Docker Deployment
 
@@ -183,7 +130,7 @@ docker-compose up -d
 pip install pytest pytest-asyncio
 
 # Run tests
-python tests/test_websocket.py
+python tests/test_telegram.py
 ```
 
 ### Code Formatting
@@ -270,19 +217,16 @@ Logs are stored in `logs/app.log` with automatic rotation.
 
 ## Architecture
 
-### WebSocket Integration
+### Core Components
 
-The bot uses WebSocket connections to provide real-time updates:
+- **TelegramService**: Handles Telegram bot operations and message processing
+- **HTTPHandler**: Processes HTTP requests and webhook endpoints
+- **BotStats**: Manages bot statistics and health monitoring
 
-1. **Telegram Updates** → **Bot Service** → **WebSocket Broadcast**
-2. **WebSocket Messages** → **Handler** → **Response**
+### Message Flow
 
-### Key Components
-
-- **WebSocketManager**: Manages all WebSocket connections
-- **TelegramService**: Handles Telegram bot operations
-- **HTTPHandler**: Processes HTTP requests and webhooks
-- **WebSocketHandler**: Processes WebSocket messages
+1. **Telegram Webhook** → **HTTP Handler** → **Telegram Service**
+2. **User Message** → **Command Processing** → **Response**
 
 ## Contributing
 
@@ -301,5 +245,5 @@ This project is licensed under the MIT License.
 For issues and questions:
 1. Check the logs in `logs/app.log`
 2. Review the configuration in `.env`
-3. Test WebSocket connectivity with `tests/test_websocket.py`
+3. Test bot functionality with basic commands
 4. Open an issue on GitHub

@@ -1,6 +1,6 @@
 # Google Cloud Platform Deployment Guide
 
-This guide will help you deploy your Telegram WebSocket bot to Google Cloud Platform without requiring a domain.
+This guide will help you deploy your Telegram bot to Google Cloud Platform without requiring a domain.
 
 ## Prerequisites
 
@@ -139,18 +139,14 @@ https://itsakphyo-bot-abc123-uc.a.run.app
 
 ### Set the Webhook URL
 
-1. **Option A: Use the dashboard**
-   - Go to: `https://your-service-url/dashboard`
-   - Use the webhook configuration section
-
-2. **Option B: Use curl**
+1. **Option A: Use curl**
    ```bash
    curl -X POST "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook" \
         -H "Content-Type: application/json" \
         -d '{"url": "https://your-service-url/webhook"}'
    ```
 
-3. **Option C: Use the bot's webhook endpoint**
+2. **Option B: Use the bot's webhook endpoint**
    ```bash
    curl -X POST "https://your-service-url/webhook/set"
    ```
@@ -162,10 +158,7 @@ https://itsakphyo-bot-abc123-uc.a.run.app
 curl https://your-service-url/health
 ```
 
-### 2. WebSocket Dashboard
-Visit: `https://your-service-url/dashboard`
-
-### 3. Telegram Bot
+### 2. Telegram Bot
 Send `/start` or `/help` to your bot on Telegram.
 
 ## Monitoring and Logs
@@ -263,14 +256,12 @@ If you encounter issues:
 
 1. Check the [Google Cloud Run documentation](https://cloud.google.com/run/docs)
 2. Review the service logs in Google Cloud Console
-3. Test the webhook using the dashboard at `/dashboard`
-4. Verify your environment variables are set correctly
+3. Verify your environment variables are set correctly
 
 ## File Structure for GCP Deployment
 
 ```
 ├── app/                          # Application code
-├── static/                       # Static files (dashboard)
 ├── .env.gcp                      # GCP environment template
 ├── .env.gcp.local               # Your actual environment (don't commit)
 ├── Dockerfile                    # Optimized for Google Cloud Run
@@ -291,4 +282,4 @@ After successful deployment:
 4. **Backup Configuration**: Save your environment variables securely
 5. **CI/CD**: Consider setting up automated deployments with Google Cloud Build
 
-Your Telegram WebSocket bot is now running on Google Cloud Platform without requiring a domain! 🚀
+Your Telegram bot is now running on Google Cloud Platform without requiring a domain! 🚀
