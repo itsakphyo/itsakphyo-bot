@@ -2,17 +2,14 @@
 
 A production-ready Telegram bot with clean architecture and robust error handling.
 
- **Try the live bot**: [@itsakphyo_bot](https://t.me/itsakphyo_bot)
+ [![Live Demo](https://img.shields.io/badge/Demo-itsakphyo_bot-blue)](https://t.me/itsakphyo_bot)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ## Features
 
 -  **Production Ready**: Structured codebase with proper error handling
 -  **Docker Support**: Containerized deployment
--  **Monitoring**: Health checks and status monitoring
 -  **Security**: Input validation and secure configuration
--  **Logging**: Comprehensive logging with rotation
--  **FastAPI**: High-performance async web framework
--  **Configurable**: Environment-based configuration
 
 ## Project Structure
 
@@ -53,7 +50,7 @@ git clone https://github.com/itsakphyo/itsakphyo-bot
 cd itsakphyo-bot
 ```
 
-### 2. Create Virtual Environment
+### 2. Create Virtual Environment (optional-recommeded)
 
 ```bash
 # Create virtual environment
@@ -218,12 +215,6 @@ server {
 
 ## Monitoring
 
-### Health Check
-
-```bash
-curl http://localhost:8000/health
-```
-
 ### Logs
 
 Logs are stored in `logs/app.log` with automatic rotation.
@@ -241,14 +232,6 @@ Logs are stored in `logs/app.log` with automatic rotation.
 1. **Telegram Webhook** → **HTTP Handler** → **Telegram Service**
 2. **User Message** → **Command Processing** → **Response**
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test the bot locally using the provided scripts
-5. Submit a pull request
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -258,11 +241,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Aung Khant Phyo**
 - Email: itsakphyo@gmail.com
 - GitHub: [@itsakphyo](https://github.com/itsakphyo)
-
-## Support
-
-For issues and questions:
-1. Check the logs in `logs/app.log`
-2. Review the configuration in `.env`
-3. Test bot functionality with basic commands
-4. Open an issue on GitHub
