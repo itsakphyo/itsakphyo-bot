@@ -16,29 +16,29 @@ A production-ready Telegram bot with clean architecture and robust error handlin
 ```
 itsakphyo-bot/             
 ├── app/
-│   ├── handlers/          # Request handlers
+│   ├── handlers/             # Request handlers
 │   │   └── http_handler.py
-│   ├── services/          # Business logic
+│   ├── services/             # Business logic
 │   │   └── telegram_service.py
-│   ├── models/            # Data models
+│   ├── models/               # Data models
 │   │   └── schemas.py
-│   ├── utils/             # Utility functions
+│   ├── utils/                # Utility functions
 │   │   └── helpers.py
-│   └── main.py            # FastAPI application
-├── config/                # Configuration
+│   └── main.py               # FastAPI application
+├── config/                   # Configuration
 │   ├── settings.py
 │   └── logging.py
-├── logs/                  # Log files
-├── static/               # Static files (if any)
+├── logs/                     # Log files
+├── static/                   # Static files (if any)
 ├── requirements.txt
 ├── Dockerfile
 ├── docker-compose.yml
-├── cloudbuild.yaml       # For GCP deployment
+├── cloudbuild.yaml.template  # For GCP deployment
 ├── .env.example
-├── .env.gcp.template     # For GCP deployment
-├── start.bat             # Windows development script
-├── start.sh              # Linux/Mac development script
-└── main.py               # Entry point
+├── .env.gcp.template         # For GCP deployment
+├── start.bat                 # Windows development script
+├── start.sh                  # Linux/Mac development script
+└── main.py                   # Entry point
 ```
 
 ## Quick Start
