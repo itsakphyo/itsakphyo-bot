@@ -94,3 +94,6 @@ dmypy.json
 
 # Application specific
 old_main.py
+
+# Google Cloud Build (contains sensitive tokens)
+cloudbuild.yaml
