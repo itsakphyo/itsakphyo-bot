@@ -1,243 +1,94 @@
-# Itsakphyo - Telegram Bot
+# Itsakphyo Personal Assistant Bot
 
-A production-ready Telegram bot with clean architecture and robust error handling.
-
- [![Live Demo](https://img.shields.io/badge/Demo-itsakphyo_bot-blue)](https://t.me/itsakphyo_bot)
+[![Live Demo](https://img.shields.io/badge/Demo-itsakphyo__bot-blue)](https://t.me/itsakphyo_bot)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-Production%20API-009688?logo=fastapi&logoColor=white)
+![Telegram](https://img.shields.io/badge/Telegram-Bot%20API-26A5E4?logo=telegram&logoColor=white)
+![Vertex AI](https://img.shields.io/badge/Vertex%20AI-Gemini%201.5-4285F4?logo=googlecloud&logoColor=white)
+![RAG](https://img.shields.io/badge/RAG-Enabled-orange)
+![Docker](https://img.shields.io/badge/Container-Docker-2496ED?logo=docker&logoColor=white)
+![Cloud Run](https://img.shields.io/badge/Deploy-Cloud%20Run-4285F4?logo=googlecloud&logoColor=white)
 
-## Features
+Lightweight Telegram assistant that answers questions about Aung Khant Phyo using a private Retrieval-Augmented Generation (RAG) pipeline backed by Google Cloud Vertex AI (Gemini) and documents stored in Google Drive.
 
--  **Production Ready**: Structured codebase with proper error handling
--  **Docker Support**: Containerized deployment
--  **Security**: Input validation and secure configuration
+## Overview
 
-## Project Structure
+The bot receives Telegram messages (webhook or polling), routes them through a FastAPI backend, retrieves relevant document context from a managed RAG corpus (Google Drive sourced), and composes a concise natural reply—without exposing underlying implementation details to end‑users. A single script (`update_documents.py`) refreshes the knowledge base and can optionally re‑deploy the container to Cloud Run and reset the webhook.
+
+## Key Features
+
+- Contextual answers powered by Vertex AI Gemini (RAG with embedding + retrieval)
+- Automated corpus refresh + optional deployment workflow
+- Clean separation of services (Telegram, RAG, HTTP layer)
+- FastAPI health + webhook endpoints for production readiness
+- Structured logging & rotating log files
+- Docker + Cloud Run friendly (stateless, configurable via env vars)
+
+## High-Level Architecture
 
 ```
-itsakphyo-bot/             
-├── app/
-│   ├── handlers/             # Request handlers
-│   │   └── http_handler.py
-│   ├── services/             # Business logic
-│   │   └── telegram_service.py
-│   ├── models/               # Data models
-│   │   └── schemas.py
-│   ├── utils/                # Utility functions
-│   │   └── helpers.py
-│   └── main.py               # FastAPI application
-├── config/                   # Configuration
-│   ├── settings.py
-│   └── logging.py
-├── logs/                     # Log files
-├── static/                   # Static files (if any)
-├── requirements.txt
-├── Dockerfile
-├── docker-compose.yml
-├── cloudbuild.yaml.template  # For GCP deployment
-├── .env.example
-├── .env.gcp.template         # For GCP deployment
-├── start.bat                 # Windows development script
-├── start.sh                  # Linux/Mac development script
-└── main.py                   # Entry point
+Telegram → FastAPI (webhook/polling) → RAG Service (Vertex AI) → Gemini Model → Response
 ```
 
-## Quick Start
+Components:
+- `app/main.py` FastAPI application & lifecycle (startup initializes bot + webhook)
+- `app/services/telegram_service.py` Telegram bot orchestration (commands, message routing)
+- `app/services/rag_service.py` Vertex AI RAG setup (corpus creation/reuse, import, retrieval + generation)
+- `app/handlers/http_handler.py` Webhook + health endpoints
+- `update_documents.py` End‑to‑end refresh (purge + re-import Google Drive files, test sample queries, deploy)
+- `config/settings.py` Environment-driven configuration & validation
 
-### 1. Clone and Setup
+## Tech Stack
 
-```bash
-git clone https://github.com/itsakphyo/itsakphyo-bot
-cd itsakphyo-bot
-```
+- Python 3.11
+- FastAPI + Uvicorn
+- python-telegram-bot (async handlers)
+- Google Cloud Vertex AI (Gemini 1.5 Flash, embeddings, RAG API)
+- Docker / Cloud Run
+- Logging: RotatingFileHandler + console
 
-### 2. Create Virtual Environment (optional-recommeded)
+## Environment & Configuration
 
-```bash
-# Create virtual environment
-python -m venv venv
+Primary env variables (see `.env.example`):
+- `TOKEN` / `BOT_USERNAME` Telegram authentication
+- `GOOGLE_CLOUD_PROJECT_ID`, `GOOGLE_CLOUD_REGION`
+- `GOOGLE_DRIVE_FOLDER_ID` Source folder for documents (PDF, DOCX, TXT, MD)
+- `SECRET_KEY`, `ENVIRONMENT`, `HOST`, optional logging parameters
 
-# Activate virtual environment
-# Windows:
-venv\Scripts\activate
+If webhook hosting is desired set `WEBHOOK_URL`; otherwise polling starts automatically.
 
-# Linux/Mac:
-source venv/bin/activate
-```
+## Operational Flow
 
-### 3. Install Dependencies
+1. First start: RAG service checks for existing corpus (named `telegram-bot-rag-corpus`), creates if absent, imports folder contents.
+2. User messages trigger classification (greeting / technical / identity / etc.) and style-guided prompt enrichment.
+3. Gemini model generates response with retrieval augmentation; fallback logic used if RAG unavailable.
+4. `update_documents.py` can purge + re-import corpus, sanity test queries, build & deploy, and set webhook.
 
-```bash
-pip install -r requirements.txt
-```
+## Endpoints (Public)
 
-### 4. Configure Environment
+- `GET /` Basic service info
+- `GET /health` Health status (bot + service)
+- `POST /webhook` Telegram update intake (path configurable via `WEBHOOK_PATH`, default `/webhook`)
 
-```bash
-cp .env.example .env
-# Edit .env with your bot token and configuration
-```
+Docs (`/docs`, `/redoc`) available only outside production mode.
 
-### 5. Run the Bot
+## Security & Privacy
 
-**Option A: Using convenience scripts**
-```bash
-# Windows
-.\start.bat
+- Secrets isolated in `.env` (never committed)
+- Service Account + Vertex AI IAM boundary
+- No user PII persisted; interactions processed in-memory
+- Rotating log file at `logs/app.log` (size + backup limits via env)
 
-# Linux/Mac  
-./start.sh
-```
+## Deployment
 
-**Option B: Manual setup**
-```bash
-python main.py
-```
-
-## Configuration
-
-### Environment Variables
-
-Copy `.env.example` to `.env` and configure:
-
-```env
-# Bot Configuration
-TOKEN=your_telegram_bot_token_here
-BOT_USERNAME=@your_bot_username_here
-
-# Server Configuration
-HOST=0.0.0.0
-PORT=8000
-ENVIRONMENT=development
-```
-
-### Getting Bot Token
-
-1. Message [@BotFather](https://t.me/botfather) on Telegram
-2. Send `/newbot` command
-3. Follow instructions to create your bot
-4. Copy the token to your `.env` file
-
-## API Endpoints
-
-### HTTP Endpoints
-
-- `GET /` - Root endpoint
-- `GET /health` - Health check
-- `POST /webhook` - Telegram webhook
-- `POST /webhook/set` - Set webhook URL
-- `DELETE /webhook` - Delete webhook
-
-## Docker Deployment
-
-### Build and Run
-
-```bash
-# Build image
-docker build -t itsakphyo-bot .
-
-# Run container
-docker run -d \
-  --name itsakphyo-bot \
-  -p 8000:8000 \
-  --env-file .env \
-  itsakphyo-bot
-```
-
-### Using Docker Compose
-
-```bash
-# Build and run (you can change the service name in docker-compose.yml)
-docker-compose up -d
-```
-
-## Development
-
-### Local Development Scripts
-
-Use the provided convenience scripts for easy setup:
-
-**Windows:**
-```bash
-.\start.bat
-```
-
-**Linux/Mac:**
-```bash
-./start.sh
-```
-
-These scripts automatically:
-- Create virtual environment
-- Install dependencies  
-- Set up configuration files
-- Start the application
-
-## Production Setup
-
-### 1. Set Webhook
-
-For production, set up webhook instead of polling:
-
-```bash
-curl -X POST "http://localhost:8000/webhook/set?webhook_url=https://yourdomain.com/webhook"
-```
-
-### 2. Environment Configuration
-
-```env
-ENVIRONMENT=production
-DEBUG=False
-WEBHOOK_URL=https://yourdomain.com
-```
-
-### 3. Reverse Proxy (Nginx)
-
-```nginx
-server {
-    listen 80;
-    server_name yourdomain.com;
-
-    location / {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-## Bot Commands
-
-- `/start` - Initialize the bot and show welcome message
-- `/help` - Show help message with available commands
-- `/stop` - Stop the bot gracefully
-
-## Monitoring
-
-### Logs
-
-Logs are stored in `logs/app.log` with automatic rotation.
-
-## Architecture
-
-### Core Components
-
-- **TelegramService**: Handles Telegram bot operations and message processing
-- **HTTPHandler**: Processes HTTP requests and webhook endpoints
-- **Settings**: Manages configuration and environment variables
-
-### Message Flow
-
-1. **Telegram Webhook** → **HTTP Handler** → **Telegram Service**
-2. **User Message** → **Command Processing** → **Response**
+Designed for Cloud Run (containerized, stateless, single port). CI build optional via `cloudbuild.yaml` (template in repo). `docker-compose.yml` provided for local container orchestration.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License. See `LICENSE`.
 
-## Author
+## Contact
 
-**Aung Khant Phyo**
-- Email: itsakphyo@gmail.com
-- GitHub: [@itsakphyo](https://github.com/itsakphyo)
+Email: itsakphyo@gmail.com
+

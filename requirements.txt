@@ -7,6 +7,9 @@ python-dotenv==1.0.0
 # HTTP client - Compatible with python-telegram-bot
 httpx>=0.24.1,<0.26.0
 
+# Google Cloud AI Platform for RAG
+google-cloud-aiplatform>=1.38.0
+
 # Production server
 gunicorn==21.2.0
 

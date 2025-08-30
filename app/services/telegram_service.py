@@ -39,6 +39,14 @@ class TelegramBotService:
             await self.application.initialize()
             await self.application.start()
             
+            # Initialize RAG service
+            try:
+                from app.services.rag_service import rag_service
+                await rag_service.initialize()
+                logger.info("RAG service initialization attempted")
+            except Exception as e:
+                logger.warning(f"RAG service initialization failed: {e}")
+            
             # Start polling if no webhook URL is configured
             if not settings.webhook_full_url:
                 logger.info("No webhook URL configured, starting polling...")
@@ -127,11 +135,12 @@ class TelegramBotService:
         chat_id = str(update.effective_chat.id) if update.effective_chat else None
         
         response_text = (
-            "🤖 Hello! Welcome to the bot.\n\n"
+            "👋 Hello! I'm Aung Khant Phyo's personal assistant.\n\n"
+            "I can help answer questions about Aung Khant Phyo's background, "
+            "experience, projects, and expertise.\n\n"
             "Available commands:\n"
-            "/help - Show this help message\n"
-            "/stop - Stop the bot\n\n"
-            "Feel free to send me any message!"
+            "/help - Show available commands\n\n"
+            "Feel free to ask me anything about Aung Khant Phyo!"
         )
         
         await update.message.reply_text(response_text)
@@ -142,11 +151,15 @@ class TelegramBotService:
             return
             
         response_text = (
-            "🆘 Help - Bot Commands:\n\n"
-            "/start - Initialize the bot\n"
-            "/help - Show this help message\n"
-            "/stop - Stop the bot\n\n"
-            "Send me any message and I'll respond!"
+            "🆘 How can I help you?\n\n"
+            "I'm here to answer questions about Aung Khant Phyo.\n\n"
+            "You can ask me about:\n"
+            "• His professional background and experience\n"
+            "• His projects and technical expertise\n"
+            "• His skills and qualifications\n"
+            "• Contact information\n"
+            "• And much more!\n\n"
+            "Just send me your question and I'll do my best to help! 😊"
         )
         
         await update.message.reply_text(response_text)
@@ -173,15 +186,23 @@ class TelegramBotService:
         if message_type == 'group':
             if settings.bot_username and settings.bot_username in text:
                 new_text = text.replace(settings.bot_username, '').strip()
-                response = self._simple_response(new_text)
+                response = await self._generate_intelligent_response(new_text, user_id)
             else:
                 return
         else:
-            response = self._simple_response(text)
+            response = await self._generate_intelligent_response(text, user_id)
         
         await update.message.reply_text(response)
         
-        # You can add your own reply logic here for more complex messages
+    
+    async def _generate_intelligent_response(self, text: str, user_id: Optional[str] = None) -> str:
+        """Generate intelligent response using RAG service."""
+        try:
+            from app.services.rag_service import rag_service
+            return await rag_service.generate_response(text, user_id)
+        except Exception as e:
+            logger.error(f"Error generating intelligent response: {e}")
+            return self._simple_response(text)
     
     def _generate_response(self, text: str) -> str:
         """Generate response to user message."""

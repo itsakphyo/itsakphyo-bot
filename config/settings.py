@@ -38,6 +38,11 @@ class Settings:
         # Environment
         self.environment = os.getenv("ENVIRONMENT", "development")
         
+        # Google Cloud RAG Configuration
+        self.google_cloud_project_id = os.getenv("GOOGLE_CLOUD_PROJECT_ID")
+        self.google_cloud_region = os.getenv("GOOGLE_CLOUD_REGION", "us-central1")
+        self.google_drive_folder_id = os.getenv("GOOGLE_DRIVE_FOLDER_ID")
+        
         # Validate required settings
         self._validate()
     

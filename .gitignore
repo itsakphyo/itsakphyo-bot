@@ -24,32 +24,6 @@ share/python-wheels/
 MANIFEST
 
 # Virtual environments
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.pyc
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# Virtual environments
 .env
 .venv
 env/
@@ -111,15 +85,29 @@ coverage.xml
 .dmypy.json
 dmypy.json
 
-# Environments
+# Environments - HIDE ALL REAL CONFIG
+.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 .env.gcp
 
+# Google Cloud Build - CONTAINS TOKENS
+cloudbuild.yaml
+
 # Application specific
 old_main.py
 
-# Google Cloud Build (contains sensitive tokens)
-cloudbuild.yaml
+# Personal information
+personal_docs/
+docs/
+test_files/
+debug_*.py
+*_test.py
+
+# Test files
+test_*.py
+test_bot_responses.py
+test_deployment.py
+test_rag.py
