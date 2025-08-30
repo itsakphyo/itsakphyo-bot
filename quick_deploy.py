@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Auto-update and deployment script for when documents are edited in Google Drive.
+Deployment script for the Aung Khant Phyo Bot.
+Uses the same deployment flow as update_documents.py but without document updates.
 """
 import asyncio
 import os
@@ -11,139 +12,14 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-class DocumentUpdaterAndDeployer:
-    """Handle document updates and deployment for the RAG system."""
+class BotDeployer:
+    """Handle deployment for the RAG system."""
     
     def __init__(self):
-        self.rag_service = None
-        
-    async def update_documents(self):
-        """Update the RAG corpus with latest documents from Google Drive."""
-        print("🔄 Starting document update process...")
-        
-        try:
-            # Import required modules
-            from app.services.rag_service import rag_service
-            from vertexai.preview import rag
-            self.rag_service = rag_service
-            print("✅ Modules loaded successfully")
-        except ImportError as e:
-            print(f"❌ Failed to import modules: {e}")
-            return False
-        
-        # Initialize RAG service
-        print("\n🚀 Initializing RAG service...")
-        success = await self.rag_service.initialize()
-        
-        if not success:
-            print("❌ RAG service initialization failed")
-            return False
-            
-        print("✅ RAG service initialized successfully!")
-        
-        # Check current corpus
-        if not self.rag_service.rag_corpus or not hasattr(self.rag_service.rag_corpus, 'name'):
-            print("❌ RAG corpus not properly initialized")
-            return False
-            
-        corpus_name = self.rag_service.rag_corpus.name
-        print(f"📊 Working with corpus: {corpus_name}")
-        
-        # Get current file count
-        try:
-            if corpus_name:
-                current_files = rag.list_files(corpus_name=corpus_name)
-                current_count = len(current_files.rag_files) if current_files.rag_files else 0
-                print(f"📁 Current files in corpus: {current_count}")
-                
-                if current_count > 0:
-                    print("🗑️ Removing old files...")
-                    for file in current_files.rag_files:
-                        try:
-                            rag.delete_file(name=file.name)
-                            print(f"✅ Deleted: {file.display_name}")
-                        except Exception as e:
-                            print(f"⚠️ Could not delete {file.display_name}: {e}")
-            else:
-                print("❌ Corpus name is None")
-                return False
-                        
-        except Exception as e:
-            print(f"⚠️ Could not check existing files: {e}")
-        
-        # Import fresh files from Google Drive
-        print(f"\n📥 Importing fresh files from Google Drive...")
-        try:
-            drive_folder_id = self.rag_service.drive_folder_id
-            if corpus_name:
-                operation = rag.import_files(
-                    corpus_name=corpus_name,
-                    paths=[f"https://drive.google.com/drive/folders/{drive_folder_id}"],
-                    chunk_size=512,
-                    chunk_overlap=50,
-                )
-                print(f"✅ Import operation completed!")
-                print(f"📋 Result: {operation}")
-                
-                # Wait for processing
-                print(f"\n⏳ Waiting for files to be processed...")
-                await asyncio.sleep(15)
-                
-                # Check new file count
-                try:
-                    new_files = rag.list_files(corpus_name=corpus_name)
-                    new_count = len(new_files.rag_files) if new_files.rag_files else 0
-                    print(f"📁 Updated files in corpus: {new_count}")
-                    
-                    if new_count > 0:
-                        print(f"🎉 Successfully updated! New files:")
-                        for i, file in enumerate(new_files.rag_files):
-                            print(f"   {i+1}. {file.display_name}")
-                    else:
-                        print(f"⚠️ No files found after update. Please check:")
-                        print(f"   1. Documents exist in Google Drive folder")
-                        print(f"   2. Files are in supported formats (PDF, DOCX, TXT)")
-                        print(f"   3. Service account has proper permissions")
-                        
-                except Exception as e:
-                    print(f"❌ Error checking updated files: {e}")
-            else:
-                print("❌ Corpus name is None for import")
-                return False
-                
-        except Exception as e:
-            print(f"❌ Error importing files: {e}")
-            return False
-            
-        print(f"\n✅ Document update process completed!")
-        return True
-    
-    async def test_responses(self):
-        """Test the bot responses after update."""
-        if not self.rag_service:
-            print("❌ RAG service not initialized")
-            return
-            
-        print(f"\n🧪 Testing updated responses...")
-        
-        test_queries = [
-            "Hello",
-            "Who is Aung Khant Phyo?",
-            "What are his main skills?"
-        ]
-        
-        for query in test_queries:
-            print(f"\n🔍 Query: {query}")
-            try:
-                response = await self.rag_service.generate_response(query)
-                # Truncate long responses for display
-                display_response = response[:200] + "..." if len(response) > 200 else response
-                print(f"🤖 Response: {display_response}")
-            except Exception as e:
-                print(f"❌ Error: {e}")
+        pass
     
     def deploy_to_gcp(self):
-        """Deploy the updated bot to Google Cloud Run."""
+        """Deploy the bot to Google Cloud Run."""
         print(f"\n🚀 Starting deployment to Google Cloud Run...")
         
         # Check if required environment variables are set
@@ -177,7 +53,7 @@ class DocumentUpdaterAndDeployer:
             if service_exists:
                 print(f"✅ Found existing service - will update it")
             else:
-                print(f"ℹ️ No existing service - will create new one")
+                print(f"ℹ️  No existing service - will create new one")
             
             print(f"📦 Building Docker image...")
             build_cmd = f'gcloud builds submit --tag gcr.io/{project_id}/{service_name}:latest . --quiet'
@@ -191,7 +67,7 @@ class DocumentUpdaterAndDeployer:
             print(f"✅ Docker image built successfully!")
             
             if service_exists:
-                print(f"� Updating existing Cloud Run service...")
+                print(f"🔄 Updating existing Cloud Run service...")
             else:
                 print(f"🚀 Creating new Cloud Run service...")
                 
@@ -241,7 +117,7 @@ class DocumentUpdaterAndDeployer:
                     print(f"✅ Webhook set successfully!")
                     print(f"🎯 Webhook URL: {webhook_url}")
                 else:
-                    print(f"⚠️ Warning: Could not set webhook automatically")
+                    print(f"⚠️  Warning: Could not set webhook automatically")
                     print(f"Please set it manually: {webhook_url}")
             else:
                 # If URL not found in stdout, try to get it manually
@@ -276,8 +152,8 @@ class DocumentUpdaterAndDeployer:
             return False
 
 async def main():
-    """Main function to run the document update and deployment process."""
-    print("🚀 Aung Khant Phyo Bot - Document Updater & Deployer")
+    """Main function to run the deployment process."""
+    print("🚀 Aung Khant Phyo Bot - Deployer")
     print("=" * 60)
     
     # Check environment
@@ -287,42 +163,31 @@ async def main():
     if missing_vars:
         print(f"❌ Missing environment variables: {', '.join(missing_vars)}")
         print(f"Please check your .env file.")
-        return
+        return 1
     
-    # Create updater and run
-    updater = DocumentUpdaterAndDeployer()
+    # Create deployer and run
+    deployer = BotDeployer()
     
     try:
-        # Step 1: Update documents
-        success = await updater.update_documents()
-        
-        if not success:
-            print("❌ Document update failed. Skipping deployment.")
-            return 1
-        
-        # Step 2: Test responses (optional)
-        print(f"\n" + "=" * 60)
-        test_response = input("Would you like to test the updated responses? (y/n): ").lower().strip()
-        if test_response in ['y', 'yes']:
-            await updater.test_responses()
-        
-        # Step 3: Deploy to GCP
+        # Deploy to GCP
         print(f"\n" + "=" * 60)
         deploy_response = input("Would you like to deploy to Google Cloud Run? (y/n): ").lower().strip()
         if deploy_response in ['y', 'yes']:
-            deployment_success = updater.deploy_to_gcp()
+            deployment_success = deployer.deploy_to_gcp()
             if deployment_success:
-                print(f"\n🎉 Complete! Your bot is updated and deployed to production!")
+                print(f"\n🎉 Complete! Your bot is deployed to production!")
             else:
-                print(f"\n⚠️ Document update succeeded, but deployment failed.")
+                print(f"\n⚠️  Deployment failed.")
                 print(f"You can deploy manually using: gcloud run deploy")
+                return 1
         else:
-            print(f"\n✅ Documents updated! Deploy manually when ready.")
+            print(f"\n✅ Deployment cancelled by user.")
         
-        print(f"\n✅ All done! Your bot knowledge base is updated.")
+        print(f"\n✅ All done!")
         
     except KeyboardInterrupt:
-        print(f"\n⚠️ Process interrupted by user.")
+        print(f"\n⚠️  Process interrupted by user.")
+        return 1
     except Exception as e:
         print(f"\n❌ Unexpected error: {e}")
         return 1

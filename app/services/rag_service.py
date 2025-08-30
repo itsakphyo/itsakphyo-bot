@@ -150,51 +150,71 @@ class RAGService:
             return self._fallback_response(user_message)
         
         try:
+            # Preprocess the message to handle pronouns and context
+            processed_message = self._preprocess_message(user_message)
+            
             # Analyze the type of query to provide contextual responses
-            query_type = self._analyze_query_type(user_message)
+            query_type = self._analyze_query_type(processed_message)
             
             # Create a natural, contextual prompt for the assistant
             enhanced_query = f"""
-            You are Aung Khant Phyo's personal assistant. A user has asked: "{user_message}"
+            You are Aung Khant Phyo's personal AI assistant. A user has asked: "{processed_message}"
             
-            IMPORTANT RESPONSE GUIDELINES:
+            CRITICAL RESPONSE GUIDELINES - FOLLOW EXACTLY:
             
             Query Type: {query_type}
             
             1. GREETING QUERIES (hello, hi, hey, good morning):
-               - Respond warmly: "Hi! I'm here to help you learn about Aung Khant Phyo. What would you like to know?"
-               - Don't use "Hello!" at the start
-               - Ask specifically what they want to know
+               - Respond: "Hi! I'm here to help you learn about Aung Khant Phyo. What would you like to know?"
+               - Always ask what they want to know specifically
             
-            2. SPECIFIC TECHNICAL QUESTIONS (skills, experience, languages, projects):
-               - NO greeting words (Hello, Hi) - get straight to the answer
-               - Provide specific, detailed information
-               - Be comprehensive but concise
-               - Example: "Aung Khant Phyo is skilled in Python, TypeScript, Java..." (NOT "Hello! He's skilled in...")
+            2. TECHNICAL/SPECIFIC QUESTIONS (skills, experience, languages, projects, background):
+               - NEVER start with greetings (Hello, Hi, Hey)
+               - Jump straight into the answer
+               - Be specific and detailed
+               - Example: "Aung Khant Phyo is skilled in Python, TypeScript..." (NOT "Hello! He's skilled in...")
             
             3. IDENTITY QUESTIONS (who is, tell me about, what does he do):
-               - NO greeting words
-               - Give a brief but informative overview
-               - Include 2-3 key highlights about his background
-               - Keep it under 100 words
+               - NEVER start with greetings
+               - Give a comprehensive but concise overview
+               - Include his role, background, and key skills
+               - Keep it informative but under 150 words
             
-            4. PROFESSIONAL INQUIRIES (hiring, contact, work):
+            4. SHORT CONVERSATIONAL RESPONSES:
+               - "Thanks/Thank you" → Just say "You're welcome!"
+               - "Ok" → Say "Is there anything else you'd like to know about Aung Khant Phyo?"
+               - "Very good/Great/Wow" → Say "Great! Feel free to ask me anything else about him."
+               - "Yes" → Ask "What specifically would you like to know about Aung Khant Phyo?"
+            
+            5. VAGUE QUERIES (everything, tell me more, what happened):
+               - Ask for clarification: "What specifically would you like to know about Aung Khant Phyo?"
+               - Don't give generic greetings
+            
+            6. PROFESSIONAL INQUIRIES (hiring, contact, work):
                - Be professional and helpful
                - Provide relevant professional information
-               - Don't start with greetings
+               - No greeting words needed
             
-            5. CONVERSATIONAL (thanks, help, random):
-               - Respond naturally and appropriately
-               - For thanks: just say "You're welcome!"
-               - For help: ask what specifically they want to know
+            7. NONSENSE/RANDOM INPUT:
+               - Respond helpfully: "I'm here to help you learn about Aung Khant Phyo. What would you like to know about him?"
             
-            CRITICAL RULES:
-            - Only use greetings (Hello, Hi) if the user is greeting you
-            - For non-greeting questions, jump straight into the answer
-            - Be specific and informative, not generic
-            - Keep responses conversational but focused
-            - Don't mention technical terms like "documents", "knowledge base", etc.
-            - If unsure, provide what you know and suggest contacting him directly
+            CONTEXT UNDERSTANDING:
+            - When user says "him", "his", "he" - they refer to Aung Khant Phyo
+            - Maintain conversational flow - don't repeat the same greeting
+            - Be natural and helpful, not robotic
+            
+            FORBIDDEN PHRASES:
+            - Don't say "Based on the documents" or "According to my knowledge base"
+            - Don't mention you're an AI or assistant unless asked
+            - Don't use "Hello!" for non-greeting queries
+            
+            RESPONSE LENGTH:
+            - Greetings: Short and welcoming
+            - Technical questions: Comprehensive but organized
+            - Thanks: Just "You're welcome!"
+            - Vague queries: Ask for clarification
+            
+            Remember: Be helpful, conversational, and focused on Aung Khant Phyo.
             """
             
             # Generate response using RAG
@@ -203,6 +223,9 @@ class RAGService:
             if response and hasattr(response, 'text') and response.text:
                 # Clean up the response
                 clean_response = response.text.strip()
+                
+                # Post-process to ensure quality
+                clean_response = self._postprocess_response(clean_response, query_type, processed_message)
                 
                 # Limit response length for Telegram
                 if len(clean_response) > 4000:
@@ -216,33 +239,144 @@ class RAGService:
             logger.error(f"Error generating RAG response: {e}")
             return self._fallback_response(user_message)
     
+    def _preprocess_message(self, message: str) -> str:
+        """Preprocess the message to handle pronouns and improve context."""
+        processed = message.strip()
+        
+        # Handle common abbreviations and expansions
+        abbreviations = {
+            'his exp': 'Aung Khant Phyo\'s experience',
+            'his skills': 'Aung Khant Phyo\'s skills',
+            'his background': 'Aung Khant Phyo\'s background',
+            'his projects': 'Aung Khant Phyo\'s projects',
+            'his work': 'Aung Khant Phyo\'s work',
+            'tell me everything you know about him': 'tell me everything about Aung Khant Phyo',
+            'everything about him': 'everything about Aung Khant Phyo',
+            'how can i reach him': 'how can I contact Aung Khant Phyo',
+            'can i contact him': 'can I contact Aung Khant Phyo',
+            'contact him': 'contact Aung Khant Phyo',
+        }
+        
+        processed_lower = processed.lower()
+        for abbrev, expansion in abbreviations.items():
+            if processed_lower == abbrev or processed_lower == abbrev + '?':
+                return expansion
+        
+        # Handle common pronoun references in longer phrases
+        replacements = {
+            ' him ': ' Aung Khant Phyo ',
+            ' his ': ' Aung Khant Phyo\'s ',
+            ' he ': ' Aung Khant Phyo ',
+            'about him': 'about Aung Khant Phyo',
+            'tell me about him': 'tell me about Aung Khant Phyo',
+            'who is he': 'who is Aung Khant Phyo',
+            'what does he': 'what does Aung Khant Phyo',
+            'where is he': 'where is Aung Khant Phyo',
+            'what about him': 'what about Aung Khant Phyo',
+            'tell me more about him': 'tell me more about Aung Khant Phyo',
+        }
+        
+        for old, new in replacements.items():
+            if old in processed_lower:
+                # Find the position and replace with proper case
+                pos = processed_lower.find(old)
+                if pos != -1:
+                    processed = processed[:pos] + new + processed[pos + len(old):]
+                    processed_lower = processed.lower()
+        
+        return processed
+    
+    def _postprocess_response(self, response: str, query_type: str, original_query: str) -> str:
+        """Post-process the response to ensure quality and appropriateness."""
+        # Remove any unwanted prefixes
+        unwanted_prefixes = [
+            "Based on the documents",
+            "According to my knowledge",
+            "From the information provided",
+            "The documents show that",
+        ]
+        
+        for prefix in unwanted_prefixes:
+            if response.startswith(prefix):
+                # Find the next sentence start
+                next_sentence = response.find('. ') + 2
+                if next_sentence > 1:
+                    response = response[next_sentence:]
+        
+        # Ensure appropriate response for query type
+        original_lower = original_query.lower().strip()
+        
+        # Handle thanks responses
+        if original_lower in ['thanks', 'thank you', 'thx']:
+            return "You're welcome!"
+        
+        # Handle short acknowledgments
+        if original_lower in ['ok', 'okay']:
+            return "Is there anything else you'd like to know about Aung Khant Phyo?"
+        
+        if original_lower in ['very good', 'great', 'wow that many', 'wow']:
+            return "Great! Feel free to ask me anything else about him."
+        
+        if original_lower == 'yes':
+            return "What specifically would you like to know about Aung Khant Phyo?"
+        
+        # Handle humor/casual comments
+        if 'funny' in original_lower or 'haha' in original_lower:
+            return "Glad you enjoyed that! What else would you like to know about Aung Khant Phyo?"
+        
+        # Handle vague queries
+        if original_lower in ['everything', 'tell me everything', 'what happened']:
+            return "What specifically would you like to know about Aung Khant Phyo? I can tell you about his background, skills, experience, projects, or anything else you're curious about!"
+        
+        return response.strip()
+    
     def _analyze_query_type(self, message: str) -> str:
         """Analyze the type of query to provide appropriate response style."""
         msg_lower = message.lower().strip()
+        
+        # Handle empty or very short messages
+        if not msg_lower or len(msg_lower) < 2:
+            return "help"
         
         # Greeting queries
         if any(greeting in msg_lower for greeting in ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening']):
             return "greeting"
         
+        # Thanks responses
+        if any(thanks in msg_lower for thanks in ['thanks', 'thank you', 'thx']):
+            return "thanks"
+        
+        # Short conversational responses
+        if msg_lower in ['ok', 'okay', 'yes', 'very good', 'great', 'wow', 'wow that many', 'nice']:
+            return "conversational"
+        
+        # Humor/casual comments
+        if any(casual in msg_lower for casual in ['funny', 'haha', 'lol', 'cool']):
+            return "conversational"
+        
+        # Vague queries that need clarification
+        if msg_lower in ['everything', 'tell me everything', 'what happened', 'what about']:
+            return "vague"
+        
         # Specific technical questions
-        elif any(tech in msg_lower for tech in ['skills', 'programming', 'languages', 'technology', 'technical', 'experience', 'projects', 'work']):
+        elif any(tech in msg_lower for tech in ['skills', 'programming', 'languages', 'technology', 'technical', 'experience', 'projects', 'work', 'exp']):
             return "technical"
         
         # Identity questions
-        elif any(identity in msg_lower for identity in ['who is', 'tell me about', 'what does', 'about him']):
+        elif any(identity in msg_lower for identity in ['who is', 'tell me about', 'what does', 'about him', 'about aung']):
             return "identity"
         
         # Professional inquiries
-        elif any(prof in msg_lower for prof in ['hire', 'hiring', 'contact', 'reach', 'professional', 'work with']):
+        elif any(prof in msg_lower for prof in ['hire', 'hiring', 'contact', 'reach', 'professional', 'work with', 'email', 'phone']):
             return "professional"
         
-        # Thanks
-        elif any(thanks in msg_lower for thanks in ['thanks', 'thank you', 'thx']):
-            return "thanks"
-        
-        # Help
+        # Help requests
         elif 'help' in msg_lower:
             return "help"
+        
+        # Random/nonsense input
+        elif not any(char.isalpha() for char in msg_lower) or len(set(msg_lower.replace(' ', ''))) <= 3:
+            return "nonsense"
         
         # Default conversational
         else:
@@ -252,16 +386,49 @@ class RAGService:
         """Fallback response when RAG is not available."""
         t = text.lower().strip()
         
+        # Handle greetings
         if any(greeting in t for greeting in ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening']):
-            return "Hello! I'm Aung Khant Phyo's assistant. How can I help you learn more about him today?"
+            return "Hi! I'm here to help you learn about Aung Khant Phyo. What would you like to know?"
+        
+        # Handle thanks
         elif any(thanks in t for thanks in ['thanks', 'thank you', 'thx']):
-            return "You're welcome! Feel free to ask me anything else about Aung Khant Phyo."
-        elif any(question in t for question in ['what', 'how', 'why', 'when', 'where', 'who']):
-            return "That's a great question about Aung Khant Phyo! I'd love to help, but I'm currently updating my information. You can reach out to him directly for the most current details."
+            return "You're welcome!"
+        
+        # Handle short conversational responses
+        elif t in ['ok', 'okay']:
+            return "Is there anything else you'd like to know about Aung Khant Phyo?"
+        elif t in ['yes']:
+            return "What specifically would you like to know about Aung Khant Phyo?"
+        elif t in ['very good', 'great', 'wow', 'nice']:
+            return "Great! Feel free to ask me anything else about him."
+        
+        # Handle vague queries
+        elif t in ['everything', 'tell me everything', 'what happened']:
+            return "What specifically would you like to know about Aung Khant Phyo? I can tell you about his background, skills, experience, projects, or anything else you're curious about!"
+        
+        # Handle questions about skills/experience
+        elif any(word in t for word in ['skills', 'experience', 'programming', 'work']):
+            return "Aung Khant Phyo is a skilled Software Engineer and AI Developer. He specializes in Python, TypeScript, machine learning, and backend development. I'd love to provide more details, but I'm currently updating my information. You can reach out to him directly for the most current details."
+        
+        # Handle identity questions
+        elif any(question in t for question in ['who is', 'tell me about', 'what does']):
+            return "Aung Khant Phyo is a Software Engineer and AI Developer based in Bangkok, Thailand. He's experienced in backend engineering, machine learning, and data analysis. I'd love to provide more details, but I'm currently updating my information. You can reach out to him directly for the most current details."
+        
+        # Handle help requests
         elif 'help' in t:
-            return "I'm here to help you learn about Aung Khant Phyo! You can ask me about his background, experience, projects, or anything else you'd like to know."
+            return "I'm here to help you learn about Aung Khant Phyo! You can ask me about his background, experience, projects, skills, or anything else you'd like to know."
+        
+        # Handle nonsense or random input
+        elif not any(char.isalpha() for char in t) or len(set(t.replace(' ', ''))) <= 3:
+            return "I'm here to help you learn about Aung Khant Phyo. What would you like to know about him?"
+        
+        # Handle other questions
+        elif any(question in t for question in ['what', 'how', 'why', 'when', 'where']):
+            return "That's a great question about Aung Khant Phyo! I'd love to help, but I'm currently updating my information. You can reach out to him directly for the most current details."
+        
+        # Default response
         else:
-            return "Thanks for reaching out! I'm Aung Khant Phyo's assistant. What would you like to know about him?"
+            return "I'm here to help you learn about Aung Khant Phyo. What would you like to know about him?"
     
     async def reload_data(self) -> bool:
         """Reload data from Google Drive (useful for updates)."""
