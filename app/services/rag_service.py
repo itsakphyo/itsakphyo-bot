@@ -159,6 +159,8 @@ class RAGService:
             # Create a natural, contextual prompt for the assistant
             enhanced_query = f"""
             You are Aung Khant Phyo's personal AI assistant. A user has asked: "{processed_message}"
+
+            He, Him, His has good change to refer to Aung Khant Phyo. Sometime user might use slang or short word, analyze carefully.
             
             CRITICAL RESPONSE GUIDELINES - FOLLOW EXACTLY:
             
@@ -185,6 +187,8 @@ class RAGService:
                - "Ok" → Say "Is there anything else you'd like to know about Aung Khant Phyo?"
                - "Very good/Great/Wow" → Say "Great! Feel free to ask me anything else about him."
                - "Yes" → Ask "What specifically would you like to know about Aung Khant Phyo?"
+               - "No" → Say "No problem! Feel free to ask if you want to know more about Aung Khant Phyo later."
+               - "Nothing" → Say "That's fine! I'm here if you want to learn about Aung Khant Phyo anytime."
             
             5. VAGUE QUERIES (everything, tell me more, what happened):
                - Ask for clarification: "What specifically would you like to know about Aung Khant Phyo?"
@@ -198,21 +202,31 @@ class RAGService:
             7. NONSENSE/RANDOM INPUT:
                - Respond helpfully: "I'm here to help you learn about Aung Khant Phyo. What would you like to know about him?"
             
+            PRONOUN USAGE RULES - CRITICAL:
+            - ALWAYS mention "Aung Khant Phyo" by name FIRST in any response about him
+            - After first mention, you can use "he", "him", "his" to refer to Aung Khant Phyo
+            - Example: "Aung Khant Phyo is a software engineer. He specializes in..." ✓
+            - Wrong: "He is a software engineer..." ✗
+            - When user says "No" it means they don't want to know more RIGHT NOW, not never
+            
             CONTEXT UNDERSTANDING:
             - When user says "him", "his", "he" - they refer to Aung Khant Phyo
             - Maintain conversational flow - don't repeat the same greeting
             - Be natural and helpful, not robotic
+            - Avoid repetitive responses - vary your language
             
             FORBIDDEN PHRASES:
             - Don't say "Based on the documents" or "According to my knowledge base"
             - Don't mention you're an AI or assistant unless asked
             - Don't use "Hello!" for non-greeting queries
+            - Don't keep asking "What would you like to know?" after user says "No"
             
             RESPONSE LENGTH:
             - Greetings: Short and welcoming
             - Technical questions: Comprehensive but organized
             - Thanks: Just "You're welcome!"
             - Vague queries: Ask for clarification
+            - Dismissive responses: Brief and understanding
             
             Remember: Be helpful, conversational, and focused on Aung Khant Phyo.
             """
@@ -241,7 +255,7 @@ class RAGService:
     
     def _preprocess_message(self, message: str) -> str:
         """Preprocess the message to handle pronouns and improve context."""
-        processed = message.strip()
+        processed = message.lower().strip()
         
         # Handle common abbreviations and expansions
         abbreviations = {
@@ -320,6 +334,13 @@ class RAGService:
         if original_lower == 'yes':
             return "What specifically would you like to know about Aung Khant Phyo?"
         
+        # Handle dismissive responses
+        if original_lower in ['no', 'nope']:
+            return "No problem! Feel free to ask if you want to know more about Aung Khant Phyo later."
+        
+        if original_lower in ['nothing', 'nah']:
+            return "That's fine! I'm here if you want to learn about Aung Khant Phyo anytime."
+        
         # Handle humor/casual comments
         if 'funny' in original_lower or 'haha' in original_lower:
             return "Glad you enjoyed that! What else would you like to know about Aung Khant Phyo?"
@@ -347,7 +368,7 @@ class RAGService:
             return "thanks"
         
         # Short conversational responses
-        if msg_lower in ['ok', 'okay', 'yes', 'very good', 'great', 'wow', 'wow that many', 'nice']:
+        if msg_lower in ['ok', 'okay', 'yes', 'very good', 'great', 'wow', 'wow that many', 'nice', 'no', 'nope', 'nothing', 'nah']:
             return "conversational"
         
         # Humor/casual comments
@@ -401,6 +422,10 @@ class RAGService:
             return "What specifically would you like to know about Aung Khant Phyo?"
         elif t in ['very good', 'great', 'wow', 'nice']:
             return "Great! Feel free to ask me anything else about him."
+        elif t in ['no', 'nope']:
+            return "No problem! Feel free to ask if you want to know more about Aung Khant Phyo later."
+        elif t in ['nothing', 'nah']:
+            return "That's fine! I'm here if you want to learn about Aung Khant Phyo anytime."
         
         # Handle vague queries
         elif t in ['everything', 'tell me everything', 'what happened']:
