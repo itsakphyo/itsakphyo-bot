@@ -150,6 +150,10 @@ class RAGService:
             return self._fallback_response(user_message)
         
         try:
+            # Check for media or emoji-only content first
+            if self._is_media_or_emoji_only(user_message):
+                return "I currently don't support media input. Please send me a text message and I'll be happy to help you learn about Aung Khant Phyo!"
+            
             # Preprocess the message to handle pronouns and context
             processed_message = self._preprocess_message(user_message)
             
@@ -300,6 +304,53 @@ class RAGService:
         
         return processed
     
+    def _is_media_or_emoji_only(self, message: str) -> bool:
+        """Check if the message contains only media, emojis, or is empty."""
+        import re
+        
+        # Check if message is empty or whitespace only
+        if not message or not message.strip():
+            return True
+        
+        # Check for common media indicators
+        media_indicators = [
+            "[photo]", "[video]", "[audio]", "[document]", "[sticker]", 
+            "[voice]", "[location]", "[contact]", "[poll]", "[dice]",
+            "<photo>", "<video>", "<audio>", "<document>", "<sticker>",
+            "<voice>", "<location>", "<contact>", "<poll>", "<dice>"
+        ]
+        
+        message_lower = message.lower().strip()
+        if any(indicator in message_lower for indicator in media_indicators):
+            return True
+        
+        # Check if message is only emojis
+        # Remove all emoji characters and see if anything meaningful remains
+        emoji_pattern = re.compile(
+            "["
+            "\U0001F600-\U0001F64F"  # emoticons
+            "\U0001F300-\U0001F5FF"  # symbols & pictographs
+            "\U0001F680-\U0001F6FF"  # transport & map symbols
+            "\U0001F1E0-\U0001F1FF"  # flags (iOS)
+            "\U00002702-\U000027B0"  # dingbats
+            "\U000024C2-\U0001F251"  # enclosed characters
+            "]+", 
+            flags=re.UNICODE
+        )
+        
+        # Remove emojis and check if only whitespace/punctuation remains
+        text_without_emojis = emoji_pattern.sub('', message).strip()
+        
+        # If after removing emojis, only punctuation or nothing remains, consider it emoji-only
+        if not text_without_emojis or re.match(r'^[^\w\s]*$', text_without_emojis):
+            return True
+        
+        # Check for single character emoji-like responses
+        if len(message.strip()) <= 3 and not any(c.isalnum() for c in message):
+            return True
+            
+        return False
+    
     def _postprocess_response(self, response: str, query_type: str, original_query: str) -> str:
         """Post-process the response to ensure quality and appropriateness."""
         # Remove any unwanted prefixes
@@ -405,6 +456,10 @@ class RAGService:
     
     def _fallback_response(self, text: str) -> str:
         """Fallback response when RAG is not available."""
+        # Check for media or emoji-only content first
+        if self._is_media_or_emoji_only(text):
+            return "I currently don't support media input. Please send me a text message and I'll be happy to help you learn about Aung Khant Phyo!"
+        
         t = text.lower().strip()
         
         # Handle greetings
